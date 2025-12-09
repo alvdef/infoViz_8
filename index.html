@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>US Car Accidents - D3 Visualization</title>
+  <link rel="stylesheet" href="src/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script defer src="src/script.js"></script>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <h1>US Car Accidents (2016-2023)</h1>
+      <p class="subtitle">Hover or click states to explore accident counts and average severity.</p>
+    </header>
+
+    <section class="controls">
+      <div id="map-controls">
+        <div class="metric-control">
+          <label for="metric-select">Map metric:</label>
+          <select id="metric-select">
+            <option value="count" selected>Total accidents</option>
+            <option value="severity">Average severity</option>
+          </select>
+        </div>
+        <div id="legend">
+          <div class="legend-item">
+            <span class="legend-label" id="legend-label-low"></span>
+            <span class="legend-value" id="legend-min"></span>
+          </div>
+          <div id="legend-gradient"></div>
+          <div class="legend-item">
+            <span class="legend-label" id="legend-label-high"></span>
+            <span class="legend-value" id="legend-max"></span>
+          </div>
+        </div>
+      </div>
+      <p id="metric-description"></p>
+    </section>
+
+    <div class="layout-grid">
+      <section id="map-container" class="card">
+        <h2>Accidents by State</h2>
+        <p class="subtitle">
+          Identify high-risk states and spot where severe (3–4) accidents cluster to guide safety priorities.
+        </p>
+        <div id="state-severity-summary" class="severity-summary"></div>
+        <div id="map"></div>
+      </section>
+      <section id="weather-bubble-container" class="card">
+        <h2>Weather conditions and accident severity</h2>
+        <p class="subtitle">
+          Explore how humidity and temperature relate to high-severity accidents. Bubble size shows how many accidents occurred in those conditions; darker color indicates a higher share of severe accidents (Severity 4).
+        </p>
+
+        <p id="bubble-state-caption" class="caption"></p>
+
+        <div class="controls" id="weather-controls">
+          <span>Filter by weather condition:</span>
+          <div id="weather-filters">
+            <button class="filter-btn active" value="all">All conditions</button>
+            <button class="filter-btn" value="is_Rain">Rain / Storm</button>
+            <button class="filter-btn" value="is_Snow">Snow / Ice</button>
+            <button class="filter-btn" value="is_Fog">Fog / Mist</button>
+            <button class="filter-btn" value="is_Clear">Clear sky</button>
+            <button class="filter-btn" value="is_Cloud">Cloudy</button>
+          </div>
+        </div>
+
+        <div id="scatterplot"></div>
+        <p id="bubble-highlight-caption" class="caption">
+          Shaded area: near-freezing, high-humidity conditions where severity may be more critical.
+        </p>
+      </section>
+      <section id="weather-severity-container" class="card">
+        <h2>Accident severity across weather conditions</h2>
+        <p class="subtitle">
+          Compare how accident severity is distributed across the most common weather conditions.
+          Bars show the total number of accidents; colors encode severity levels (1–4).
+        </p>
+
+        <p id="weather-severity-caption" class="caption">
+          Showing accidents for: <span id="weather-severity-state-label"></span>
+        </p>
+
+        <div id="weather-severity-chart"></div>
+      </section>
+      <section id="temporal-patterns-container" class="card">
+        <h2>When do accidents happen?</h2>
+        <p class="subtitle">
+          Explore how accident frequency changes over the week and across different times of day.
+          Darker cells indicate more accidents; toggle between all accidents and high-severity only.
+        </p>
+        <p id="temporal-caption" class="caption"></p>
+        <div class="controls" id="temporal-controls">
+          <span>Show:</span>
+          <div>
+            <button class="filter-btn active" value="total">All accidents</button>
+            <button class="filter-btn" value="severe">High-severity (3–4)</button>
+          </div>
+        </div>
+        <div id="temporal-heatmap"></div>
+      </section>
+    </div>
+    <footer>
+      <small>Data: Kaggle US Accidents (Sobhan Moosavi). Visualized with D3.js.</small>
+    </footer>
+  </main>
+</body>
+</html>

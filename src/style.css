@@ -1,0 +1,377 @@
+/* Basic layout */
+:root {
+  --bg: #f7f7f9;
+  --card-bg: #ffffff;
+  --text: #1f2933;
+  --muted: #4b5563;
+  --accent: #2563eb;
+  --border: #e5e7eb;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 20px 48px;
+}
+
+h1 {
+  margin: 0 0 6px;
+  font-size: 28px;
+}
+
+.subtitle {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: #555;
+  line-height: 1.4;
+}
+
+.caption {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: #666;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 16px 0 20px;
+  padding: 14px 16px;
+  background: #eef2ff;
+  border: 1px solid #dfe4ff;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+#map-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.metric-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 1 260px;
+}
+
+#map-controls label {
+  font-weight: 600;
+}
+
+#map-controls select {
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #fff;
+  font-size: 14px;
+  min-width: 170px;
+}
+
+#legend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  flex: 1 1 360px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.legend-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
+  min-width: 80px;
+}
+
+.legend-label {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.legend-value {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+#legend-gradient {
+  flex: 0 1 320px;
+  width: clamp(160px, 40vw, 320px);
+  height: 15px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: linear-gradient(90deg, #fee2e2, #b91c1c);
+  align-self: center;
+}
+
+#metric-description {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.layout-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto auto auto;
+  gap: 24px;
+  align-items: start;
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px 18px 18px;
+  margin-bottom: 0;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}
+
+.card h2 {
+  margin: 0 0 6px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #222;
+}
+
+#map-container {
+  grid-column: 1 / 3;
+  grid-row: 1 / 2;
+}
+
+#weather-bubble-container {
+  grid-column: 1 / 2;
+  grid-row: 2 / 3;
+}
+
+#weather-severity-container {
+  grid-column: 2 / 3;
+  grid-row: 2 / 3;
+}
+
+#temporal-patterns-container {
+  grid-column: 1 / 3;
+  grid-row: 3 / 4;
+}
+
+#map {
+  width: 100%;
+  min-height: 320px;
+}
+
+#scatterplot {
+  width: 100%;
+  min-height: 320px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#temporal-heatmap {
+  width: 100%;
+  min-height: 320px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#weather-severity-chart {
+  width: 100%;
+  min-height: 320px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.weather-severity-axis-label {
+  font-size: 13px;
+  fill: #555;
+}
+
+.severity-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 6px 0 8px;
+}
+
+.severity-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+  font-size: 12px;
+  color: #1f2933;
+}
+
+.severity-chip .label {
+  font-weight: 600;
+}
+
+.severity-chip .value {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.freeze-band {
+  fill: rgba(59, 130, 246, 0.08);
+  stroke: rgba(59, 130, 246, 0.25);
+  stroke-dasharray: 4 4;
+  pointer-events: none;
+}
+
+.severity-annotation {
+  font-size: 11px;
+  fill: #b91c1c;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.state {
+  cursor: pointer;
+  transition: fill 0.4s ease, stroke-width 0.2s ease;
+}
+
+.state.selected {
+  stroke: #111827 !important;
+  stroke-width: 2.2px !important;
+}
+
+.filter-btn {
+  padding: 6px 12px;
+  margin-right: 8px;
+  margin-top: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.filter-btn:hover {
+  background: #f3f4ff;
+  border-color: var(--accent);
+}
+
+.filter-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  padding: 8px 10px;
+  border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+  font-size: 12px;
+  color: #111827;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 10;
+}
+
+footer {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (max-width: 900px) {
+  .page {
+    padding: 28px 16px 40px;
+  }
+
+  .layout-grid {
+    display: block;
+  }
+
+  #map-container,
+  #weather-bubble-container,
+  #weather-severity-container {
+    grid-column: auto;
+    grid-row: auto;
+    margin-bottom: 16px;
+  }
+}
+
+@media (max-width: 720px) {
+  .card {
+    padding: 14px 12px 8px;
+  }
+
+  h1 {
+    font-size: 24px;
+  }
+
+  h2 {
+    font-size: 18px;
+  }
+
+  #legend {
+    justify-content: center;
+  }
+
+  #legend-gradient {
+    max-width: none;
+    min-width: 140px;
+  }
+}
+
+@media (max-width: 540px) {
+  .page {
+    padding: 22px 14px 32px;
+  }
+
+  #map-controls {
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+
+  #map-controls select {
+    width: 100%;
+    max-width: 240px;
+  }
+
+  #legend {
+    width: 100%;
+    gap: 8px;
+  }
+
+  .controls {
+    gap: 12px;
+  }
+}

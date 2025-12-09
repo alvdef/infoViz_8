@@ -1,0 +1,878 @@
+State,Weather_Condition,Severity,Count
+AL,Clear,1,4
+AL,Clear,2,3863
+AL,Clear,3,2207
+AL,Clear,4,5
+AL,Fair,1,234
+AL,Fair,2,18006
+AL,Fair,3,5227
+AL,Fair,4,118
+AL,Mostly Cloudy,1,100
+AL,Mostly Cloudy,2,6203
+AL,Mostly Cloudy,3,3113
+AL,Mostly Cloudy,4,49
+AL,Overcast,1,3
+AL,Overcast,2,2768
+AL,Overcast,3,1620
+AL,Overcast,4,5
+AL,Partly Cloudy,1,49
+AL,Partly Cloudy,2,4075
+AL,Partly Cloudy,3,1970
+AL,Partly Cloudy,4,20
+AR,Clear,2,55
+AR,Clear,3,53
+AR,Clear,4,4
+AR,Fair,1,17
+AR,Fair,2,418
+AR,Fair,3,95
+AR,Fair,4,54
+AR,Mostly Cloudy,1,3
+AR,Mostly Cloudy,2,45
+AR,Mostly Cloudy,3,30
+AR,Mostly Cloudy,4,16
+AR,Overcast,2,26
+AR,Overcast,3,22
+AR,Overcast,4,2
+AR,Partly Cloudy,2,26
+AR,Partly Cloudy,3,18
+AR,Partly Cloudy,4,11
+AZ,Clear,1,9
+AZ,Clear,2,13331
+AZ,Clear,3,3536
+AZ,Clear,4,27
+AZ,Fair,1,474
+AZ,Fair,2,23109
+AZ,Fair,3,4741
+AZ,Fair,4,135
+AZ,Mostly Cloudy,1,77
+AZ,Mostly Cloudy,2,7521
+AZ,Mostly Cloudy,3,2160
+AZ,Mostly Cloudy,4,16
+AZ,Overcast,1,1
+AZ,Overcast,2,970
+AZ,Overcast,3,319
+AZ,Partly Cloudy,1,58
+AZ,Partly Cloudy,2,7639
+AZ,Partly Cloudy,3,2050
+AZ,Partly Cloudy,4,15
+CA,Clear,1,128
+CA,Clear,2,108838
+CA,Clear,3,82609
+CA,Clear,4,66
+CA,Fair,1,2538
+CA,Fair,2,88304
+CA,Fair,3,42578
+CA,Fair,4,382
+CA,Mostly Cloudy,1,215
+CA,Mostly Cloudy,2,29274
+CA,Mostly Cloudy,3,21919
+CA,Mostly Cloudy,4,67
+CA,Overcast,1,21
+CA,Overcast,2,24669
+CA,Overcast,3,19951
+CA,Overcast,4,16
+CA,Partly Cloudy,1,195
+CA,Partly Cloudy,2,24350
+CA,Partly Cloudy,3,19375
+CA,Partly Cloudy,4,59
+CO,Clear,2,2394
+CO,Clear,3,1555
+CO,Clear,4,13
+CO,Fair,1,170
+CO,Fair,2,5149
+CO,Fair,3,4192
+CO,Fair,4,173
+CO,Mostly Cloudy,1,110
+CO,Mostly Cloudy,2,5357
+CO,Mostly Cloudy,3,3451
+CO,Mostly Cloudy,4,48
+CO,Overcast,1,2
+CO,Overcast,2,959
+CO,Overcast,3,543
+CO,Overcast,4,4
+CO,Partly Cloudy,1,95
+CO,Partly Cloudy,2,4832
+CO,Partly Cloudy,3,2874
+CO,Partly Cloudy,4,41
+CT,Clear,1,9
+CT,Clear,2,1897
+CT,Clear,3,2743
+CT,Clear,4,4
+CT,Fair,1,28
+CT,Fair,2,1586
+CT,Fair,3,3259
+CT,Fair,4,57
+CT,Mostly Cloudy,1,4
+CT,Mostly Cloudy,2,873
+CT,Mostly Cloudy,3,1648
+CT,Mostly Cloudy,4,15
+CT,Overcast,1,2
+CT,Overcast,2,950
+CT,Overcast,3,1340
+CT,Partly Cloudy,1,3
+CT,Partly Cloudy,2,571
+CT,Partly Cloudy,3,1091
+CT,Partly Cloudy,4,6
+DC,Clear,2,96
+DC,Clear,3,15
+DC,Fair,1,32
+DC,Fair,2,744
+DC,Fair,3,75
+DC,Fair,4,3
+DC,Mostly Cloudy,1,21
+DC,Mostly Cloudy,2,441
+DC,Mostly Cloudy,3,194
+DC,Mostly Cloudy,4,2
+DC,Overcast,2,185
+DC,Overcast,3,99
+DC,Overcast,4,1
+DC,Partly Cloudy,1,8
+DC,Partly Cloudy,2,278
+DC,Partly Cloudy,3,81
+DE,Clear,1,1
+DE,Clear,2,1003
+DE,Clear,3,73
+DE,Fair,1,131
+DE,Fair,2,2138
+DE,Fair,3,75
+DE,Fair,4,6
+DE,Mostly Cloudy,1,16
+DE,Mostly Cloudy,2,436
+DE,Mostly Cloudy,3,25
+DE,Overcast,2,415
+DE,Overcast,3,37
+DE,Partly Cloudy,1,6
+DE,Partly Cloudy,2,260
+DE,Partly Cloudy,3,12
+FL,Clear,1,14
+FL,Clear,2,32648
+FL,Clear,3,13441
+FL,Clear,4,62
+FL,Fair,1,2768
+FL,Fair,2,48885
+FL,Fair,3,16329
+FL,Fair,4,584
+FL,Mostly Cloudy,1,329
+FL,Mostly Cloudy,2,28626
+FL,Mostly Cloudy,3,18550
+FL,Mostly Cloudy,4,289
+FL,Overcast,1,6
+FL,Overcast,2,7341
+FL,Overcast,3,4750
+FL,Overcast,4,26
+FL,Partly Cloudy,1,352
+FL,Partly Cloudy,2,22213
+FL,Partly Cloudy,3,12277
+FL,Partly Cloudy,4,215
+GA,Clear,1,7
+GA,Clear,2,8574
+GA,Clear,3,9221
+GA,Clear,4,23
+GA,Fair,1,367
+GA,Fair,2,8694
+GA,Fair,3,9861
+GA,Fair,4,635
+GA,Mostly Cloudy,1,78
+GA,Mostly Cloudy,2,4311
+GA,Mostly Cloudy,3,9575
+GA,Mostly Cloudy,4,270
+GA,Overcast,1,4
+GA,Overcast,2,3513
+GA,Overcast,3,4934
+GA,Overcast,4,19
+GA,Partly Cloudy,1,40
+GA,Partly Cloudy,2,2678
+GA,Partly Cloudy,3,5462
+GA,Partly Cloudy,4,143
+IA,Clear,2,794
+IA,Clear,3,1127
+IA,Clear,4,2
+IA,Fair,1,22
+IA,Fair,2,982
+IA,Fair,3,1216
+IA,Fair,4,55
+IA,Mostly Cloudy,1,9
+IA,Mostly Cloudy,2,486
+IA,Mostly Cloudy,3,582
+IA,Mostly Cloudy,4,9
+IA,Overcast,1,1
+IA,Overcast,2,698
+IA,Overcast,3,804
+IA,Overcast,4,1
+IA,Partly Cloudy,1,5
+IA,Partly Cloudy,2,439
+IA,Partly Cloudy,3,597
+IA,Partly Cloudy,4,13
+ID,Clear,2,24
+ID,Clear,3,38
+ID,Clear,4,1
+ID,Fair,2,21
+ID,Fair,3,19
+ID,Fair,4,8
+ID,Mostly Cloudy,1,1
+ID,Mostly Cloudy,2,12
+ID,Mostly Cloudy,3,4
+ID,Mostly Cloudy,4,1
+ID,Overcast,2,9
+ID,Overcast,3,11
+ID,Partly Cloudy,2,4
+ID,Partly Cloudy,3,7
+ID,Partly Cloudy,4,1
+IL,Clear,1,7
+IL,Clear,2,11166
+IL,Clear,3,1795
+IL,Clear,4,14
+IL,Fair,1,646
+IL,Fair,2,10089
+IL,Fair,3,10149
+IL,Fair,4,107
+IL,Mostly Cloudy,1,181
+IL,Mostly Cloudy,2,8170
+IL,Mostly Cloudy,3,5653
+IL,Mostly Cloudy,4,46
+IL,Overcast,1,2
+IL,Overcast,2,8486
+IL,Overcast,3,1765
+IL,Overcast,4,17
+IL,Partly Cloudy,1,136
+IL,Partly Cloudy,2,5019
+IL,Partly Cloudy,3,3349
+IL,Partly Cloudy,4,29
+IN,Clear,1,5
+IN,Clear,2,4533
+IN,Clear,3,1507
+IN,Clear,4,6
+IN,Fair,1,160
+IN,Fair,2,2378
+IN,Fair,3,3086
+IN,Fair,4,128
+IN,Mostly Cloudy,1,28
+IN,Mostly Cloudy,2,2303
+IN,Mostly Cloudy,3,1540
+IN,Mostly Cloudy,4,28
+IN,Overcast,1,1
+IN,Overcast,2,3001
+IN,Overcast,3,1193
+IN,Overcast,4,4
+IN,Partly Cloudy,1,18
+IN,Partly Cloudy,2,1586
+IN,Partly Cloudy,3,1146
+IN,Partly Cloudy,4,29
+KS,Clear,2,165
+KS,Clear,3,370
+KS,Clear,4,1
+KS,Fair,1,18
+KS,Fair,2,537
+KS,Fair,3,1255
+KS,Fair,4,31
+KS,Mostly Cloudy,1,1
+KS,Mostly Cloudy,2,81
+KS,Mostly Cloudy,3,149
+KS,Overcast,2,104
+KS,Overcast,3,210
+KS,Partly Cloudy,1,2
+KS,Partly Cloudy,2,60
+KS,Partly Cloudy,3,151
+KS,Partly Cloudy,4,1
+KY,Clear,1,3
+KY,Clear,2,1306
+KY,Clear,3,1584
+KY,Clear,4,3
+KY,Fair,1,118
+KY,Fair,2,3268
+KY,Fair,3,1928
+KY,Fair,4,83
+KY,Mostly Cloudy,1,32
+KY,Mostly Cloudy,2,1257
+KY,Mostly Cloudy,3,1699
+KY,Mostly Cloudy,4,30
+KY,Overcast,1,2
+KY,Overcast,2,934
+KY,Overcast,3,1420
+KY,Overcast,4,1
+KY,Partly Cloudy,1,31
+KY,Partly Cloudy,2,965
+KY,Partly Cloudy,3,1177
+KY,Partly Cloudy,4,25
+LA,Clear,1,5
+LA,Clear,2,11939
+LA,Clear,3,2539
+LA,Clear,4,8
+LA,Fair,1,725
+LA,Fair,2,14812
+LA,Fair,3,4097
+LA,Fair,4,132
+LA,Mostly Cloudy,1,171
+LA,Mostly Cloudy,2,8177
+LA,Mostly Cloudy,3,2408
+LA,Mostly Cloudy,4,44
+LA,Overcast,1,1
+LA,Overcast,2,4267
+LA,Overcast,3,1000
+LA,Overcast,4,4
+LA,Partly Cloudy,1,95
+LA,Partly Cloudy,2,4292
+LA,Partly Cloudy,3,1368
+LA,Partly Cloudy,4,19
+MA,Clear,1,4
+MA,Clear,2,3461
+MA,Clear,3,2969
+MA,Clear,4,1
+MA,Fair,1,662
+MA,Fair,2,9313
+MA,Fair,3,2991
+MA,Fair,4,15
+MA,Mostly Cloudy,1,201
+MA,Mostly Cloudy,2,4447
+MA,Mostly Cloudy,3,1977
+MA,Mostly Cloudy,4,6
+MA,Overcast,1,3
+MA,Overcast,2,2572
+MA,Overcast,3,1875
+MA,Overcast,4,1
+MA,Partly Cloudy,1,116
+MA,Partly Cloudy,2,3111
+MA,Partly Cloudy,3,1391
+MA,Partly Cloudy,4,2
+MD,Clear,1,9
+MD,Clear,2,3070
+MD,Clear,3,2765
+MD,Clear,4,9
+MD,Fair,1,73
+MD,Fair,2,3979
+MD,Fair,3,2131
+MD,Fair,4,124
+MD,Mostly Cloudy,1,27
+MD,Mostly Cloudy,2,2404
+MD,Mostly Cloudy,3,2226
+MD,Mostly Cloudy,4,61
+MD,Overcast,1,4
+MD,Overcast,2,1898
+MD,Overcast,3,1994
+MD,Overcast,4,2
+MD,Partly Cloudy,1,15
+MD,Partly Cloudy,2,1295
+MD,Partly Cloudy,3,1207
+MD,Partly Cloudy,4,33
+ME,Clear,1,1
+ME,Clear,2,5
+ME,Clear,3,5
+ME,Clear,4,1
+ME,Fair,1,1
+ME,Fair,2,63
+ME,Fair,3,81
+ME,Fair,4,2
+ME,Mostly Cloudy,2,20
+ME,Mostly Cloudy,3,39
+ME,Mostly Cloudy,4,2
+ME,Overcast,2,2
+ME,Overcast,3,5
+ME,Overcast,4,1
+ME,Partly Cloudy,2,21
+ME,Partly Cloudy,3,34
+ME,Partly Cloudy,4,3
+MI,Clear,1,6
+MI,Clear,2,9724
+MI,Clear,3,6878
+MI,Clear,4,7
+MI,Fair,1,442
+MI,Fair,2,7182
+MI,Fair,3,4056
+MI,Fair,4,116
+MI,Mostly Cloudy,1,172
+MI,Mostly Cloudy,2,7052
+MI,Mostly Cloudy,3,3987
+MI,Mostly Cloudy,4,45
+MI,Overcast,1,5
+MI,Overcast,2,8885
+MI,Overcast,3,6238
+MI,Overcast,4,9
+MI,Partly Cloudy,1,95
+MI,Partly Cloudy,2,3828
+MI,Partly Cloudy,3,2192
+MI,Partly Cloudy,4,23
+MN,Clear,1,3
+MN,Clear,2,4237
+MN,Clear,3,5397
+MN,Clear,4,3
+MN,Fair,1,219
+MN,Fair,2,9306
+MN,Fair,3,2978
+MN,Fair,4,15
+MN,Mostly Cloudy,1,44
+MN,Mostly Cloudy,2,2851
+MN,Mostly Cloudy,3,3135
+MN,Mostly Cloudy,4,5
+MN,Overcast,1,1
+MN,Overcast,2,3182
+MN,Overcast,3,4381
+MN,Overcast,4,1
+MN,Partly Cloudy,1,33
+MN,Partly Cloudy,2,2013
+MN,Partly Cloudy,3,2033
+MN,Partly Cloudy,4,4
+MO,Clear,1,1
+MO,Clear,2,1309
+MO,Clear,3,2450
+MO,Clear,4,5
+MO,Fair,1,92
+MO,Fair,2,2694
+MO,Fair,3,5162
+MO,Fair,4,152
+MO,Mostly Cloudy,1,26
+MO,Mostly Cloudy,2,852
+MO,Mostly Cloudy,3,2772
+MO,Mostly Cloudy,4,42
+MO,Overcast,1,2
+MO,Overcast,2,786
+MO,Overcast,3,1960
+MO,Overcast,4,3
+MO,Partly Cloudy,1,10
+MO,Partly Cloudy,2,497
+MO,Partly Cloudy,3,1669
+MO,Partly Cloudy,4,24
+MS,Clear,2,557
+MS,Clear,3,639
+MS,Clear,4,3
+MS,Fair,1,10
+MS,Fair,2,712
+MS,Fair,3,721
+MS,Fair,4,44
+MS,Mostly Cloudy,1,2
+MS,Mostly Cloudy,2,335
+MS,Mostly Cloudy,3,346
+MS,Mostly Cloudy,4,14
+MS,Overcast,2,286
+MS,Overcast,3,288
+MS,Overcast,4,2
+MS,Partly Cloudy,1,2
+MS,Partly Cloudy,2,226
+MS,Partly Cloudy,3,265
+MS,Partly Cloudy,4,4
+MT,Clear,4,1
+MT,Fair,2,1
+MT,Fair,3,2
+MT,Fair,4,2
+MT,Mostly Cloudy,2,1
+MT,Mostly Cloudy,3,3
+MT,Mostly Cloudy,4,1
+MT,Overcast,2,1
+MT,Overcast,3,5
+MT,Partly Cloudy,2,3
+MT,Partly Cloudy,3,2
+NC,Clear,1,7
+NC,Clear,2,15375
+NC,Clear,3,2365
+NC,Fair,1,948
+NC,Fair,2,27273
+NC,Fair,3,4880
+NC,Fair,4,221
+NC,Mostly Cloudy,1,1137
+NC,Mostly Cloudy,2,33196
+NC,Mostly Cloudy,3,5179
+NC,Mostly Cloudy,4,54
+NC,Overcast,1,3
+NC,Overcast,2,12336
+NC,Overcast,3,1991
+NC,Overcast,4,2
+NC,Partly Cloudy,1,429
+NC,Partly Cloudy,2,21182
+NC,Partly Cloudy,3,3172
+NC,Partly Cloudy,4,42
+ND,Clear,2,2
+ND,Clear,3,4
+ND,Fair,2,1
+ND,Fair,3,2
+ND,Overcast,3,3
+ND,Partly Cloudy,3,1
+NE,Clear,1,7
+NE,Clear,2,6435
+NE,Clear,3,1127
+NE,Clear,4,1
+NE,Fair,1,29
+NE,Fair,2,2054
+NE,Fair,3,489
+NE,Fair,4,7
+NE,Mostly Cloudy,1,5
+NE,Mostly Cloudy,2,2167
+NE,Mostly Cloudy,3,380
+NE,Mostly Cloudy,4,3
+NE,Overcast,1,1
+NE,Overcast,2,3159
+NE,Overcast,3,557
+NE,Overcast,4,1
+NE,Partly Cloudy,1,9
+NE,Partly Cloudy,2,1357
+NE,Partly Cloudy,3,238
+NE,Partly Cloudy,4,4
+NH,Clear,1,1
+NH,Clear,2,534
+NH,Clear,3,194
+NH,Clear,4,2
+NH,Fair,1,35
+NH,Fair,2,799
+NH,Fair,3,309
+NH,Fair,4,16
+NH,Mostly Cloudy,1,16
+NH,Mostly Cloudy,2,571
+NH,Mostly Cloudy,3,257
+NH,Mostly Cloudy,4,4
+NH,Overcast,1,1
+NH,Overcast,2,413
+NH,Overcast,3,164
+NH,Partly Cloudy,1,9
+NH,Partly Cloudy,2,326
+NH,Partly Cloudy,3,136
+NJ,Clear,1,7
+NJ,Clear,2,5741
+NJ,Clear,3,2475
+NJ,Clear,4,5
+NJ,Fair,1,46
+NJ,Fair,2,5860
+NJ,Fair,3,2927
+NJ,Fair,4,51
+NJ,Mostly Cloudy,1,15
+NJ,Mostly Cloudy,2,3830
+NJ,Mostly Cloudy,3,2317
+NJ,Mostly Cloudy,4,30
+NJ,Overcast,1,1
+NJ,Overcast,2,3617
+NJ,Overcast,3,1779
+NJ,Overcast,4,5
+NJ,Partly Cloudy,1,12
+NJ,Partly Cloudy,2,2263
+NJ,Partly Cloudy,3,1333
+NJ,Partly Cloudy,4,15
+NM,Clear,2,286
+NM,Clear,3,280
+NM,Clear,4,2
+NM,Fair,1,63
+NM,Fair,2,1073
+NM,Fair,3,632
+NM,Fair,4,33
+NM,Mostly Cloudy,1,13
+NM,Mostly Cloudy,2,900
+NM,Mostly Cloudy,3,520
+NM,Mostly Cloudy,4,6
+NM,Overcast,2,148
+NM,Overcast,3,88
+NM,Overcast,4,1
+NM,Partly Cloudy,1,22
+NM,Partly Cloudy,2,852
+NM,Partly Cloudy,3,560
+NM,Partly Cloudy,4,8
+NV,Clear,2,936
+NV,Clear,3,494
+NV,Fair,1,89
+NV,Fair,2,2587
+NV,Fair,3,629
+NV,Fair,4,8
+NV,Mostly Cloudy,1,12
+NV,Mostly Cloudy,2,1160
+NV,Mostly Cloudy,3,684
+NV,Mostly Cloudy,4,2
+NV,Overcast,2,218
+NV,Overcast,3,140
+NV,Partly Cloudy,1,3
+NV,Partly Cloudy,2,835
+NV,Partly Cloudy,3,562
+NV,Partly Cloudy,4,1
+NY,Clear,1,3
+NY,Clear,2,10098
+NY,Clear,3,7433
+NY,Clear,4,10
+NY,Fair,1,179
+NY,Fair,2,14994
+NY,Fair,3,7544
+NY,Fair,4,107
+NY,Mostly Cloudy,1,116
+NY,Mostly Cloudy,2,16159
+NY,Mostly Cloudy,3,12444
+NY,Mostly Cloudy,4,59
+NY,Overcast,1,3
+NY,Overcast,2,8913
+NY,Overcast,3,6346
+NY,Overcast,4,9
+NY,Partly Cloudy,1,65
+NY,Partly Cloudy,2,8870
+NY,Partly Cloudy,3,7340
+NY,Partly Cloudy,4,28
+OH,Clear,1,5
+OH,Clear,2,5297
+OH,Clear,3,3139
+OH,Clear,4,7
+OH,Fair,1,480
+OH,Fair,2,7956
+OH,Fair,3,5443
+OH,Fair,4,166
+OH,Mostly Cloudy,1,206
+OH,Mostly Cloudy,2,5314
+OH,Mostly Cloudy,3,3474
+OH,Mostly Cloudy,4,59
+OH,Overcast,1,5
+OH,Overcast,2,5233
+OH,Overcast,3,3113
+OH,Overcast,4,6
+OH,Partly Cloudy,1,123
+OH,Partly Cloudy,2,3248
+OH,Partly Cloudy,3,2375
+OH,Partly Cloudy,4,41
+OK,Clear,1,5
+OK,Clear,2,12757
+OK,Clear,3,1087
+OK,Fair,1,653
+OK,Fair,2,16080
+OK,Fair,3,1188
+OK,Fair,4,19
+OK,Mostly Cloudy,1,133
+OK,Mostly Cloudy,2,7389
+OK,Mostly Cloudy,3,786
+OK,Mostly Cloudy,4,9
+OK,Overcast,1,2
+OK,Overcast,2,5720
+OK,Overcast,3,528
+OK,Overcast,4,1
+OK,Partly Cloudy,1,99
+OK,Partly Cloudy,2,5588
+OK,Partly Cloudy,3,580
+OK,Partly Cloudy,4,3
+OR,Clear,2,2455
+OR,Clear,3,905
+OR,Clear,4,1
+OR,Fair,1,34
+OR,Fair,2,2727
+OR,Fair,3,1070
+OR,Fair,4,26
+OR,Mostly Cloudy,1,4
+OR,Mostly Cloudy,2,2396
+OR,Mostly Cloudy,3,1072
+OR,Mostly Cloudy,4,11
+OR,Overcast,2,2104
+OR,Overcast,3,819
+OR,Overcast,4,2
+OR,Partly Cloudy,1,2
+OR,Partly Cloudy,2,1290
+OR,Partly Cloudy,3,567
+OR,Partly Cloudy,4,6
+PA,Clear,1,13
+PA,Clear,2,21655
+PA,Clear,3,3777
+PA,Clear,4,10
+PA,Fair,1,678
+PA,Fair,2,16024
+PA,Fair,3,5040
+PA,Fair,4,180
+PA,Mostly Cloudy,1,145
+PA,Mostly Cloudy,2,7698
+PA,Mostly Cloudy,3,3735
+PA,Mostly Cloudy,4,55
+PA,Overcast,1,5
+PA,Overcast,2,12477
+PA,Overcast,3,3224
+PA,Overcast,4,6
+PA,Partly Cloudy,1,81
+PA,Partly Cloudy,2,4556
+PA,Partly Cloudy,3,2171
+PA,Partly Cloudy,4,32
+RI,Clear,2,361
+RI,Clear,3,626
+RI,Clear,4,1
+RI,Fair,1,49
+RI,Fair,2,966
+RI,Fair,3,1074
+RI,Fair,4,2
+RI,Mostly Cloudy,1,23
+RI,Mostly Cloudy,2,802
+RI,Mostly Cloudy,3,1480
+RI,Mostly Cloudy,4,1
+RI,Overcast,2,328
+RI,Overcast,3,655
+RI,Partly Cloudy,1,9
+RI,Partly Cloudy,2,422
+RI,Partly Cloudy,3,896
+RI,Partly Cloudy,4,1
+SC,Clear,1,13
+SC,Clear,2,33501
+SC,Clear,3,8725
+SC,Clear,4,10
+SC,Fair,1,2456
+SC,Fair,2,58063
+SC,Fair,3,8402
+SC,Fair,4,347
+SC,Mostly Cloudy,1,590
+SC,Mostly Cloudy,2,17688
+SC,Mostly Cloudy,3,5234
+SC,Mostly Cloudy,4,105
+SC,Overcast,1,1
+SC,Overcast,2,11602
+SC,Overcast,3,3398
+SC,Overcast,4,2
+SC,Partly Cloudy,1,678
+SC,Partly Cloudy,2,13700
+SC,Partly Cloudy,3,3735
+SC,Partly Cloudy,4,81
+SD,Clear,2,1
+SD,Fair,2,5
+SD,Fair,4,1
+SD,Overcast,2,3
+TN,Clear,1,3
+TN,Clear,2,2456
+TN,Clear,3,1670
+TN,Clear,4,8
+TN,Fair,1,189
+TN,Fair,2,10238
+TN,Fair,3,3835
+TN,Fair,4,137
+TN,Mostly Cloudy,1,277
+TN,Mostly Cloudy,2,14178
+TN,Mostly Cloudy,3,6404
+TN,Mostly Cloudy,4,95
+TN,Overcast,1,1
+TN,Overcast,2,5170
+TN,Overcast,3,2713
+TN,Overcast,4,10
+TN,Partly Cloudy,1,196
+TN,Partly Cloudy,2,7265
+TN,Partly Cloudy,3,3351
+TN,Partly Cloudy,4,61
+TX,Clear,1,37
+TX,Clear,2,49096
+TX,Clear,3,16108
+TX,Clear,4,97
+TX,Fair,1,1314
+TX,Fair,2,39730
+TX,Fair,3,20540
+TX,Fair,4,320
+TX,Mostly Cloudy,1,648
+TX,Mostly Cloudy,2,40343
+TX,Mostly Cloudy,3,15274
+TX,Mostly Cloudy,4,142
+TX,Overcast,1,21
+TX,Overcast,2,29203
+TX,Overcast,3,9362
+TX,Overcast,4,47
+TX,Partly Cloudy,1,426
+TX,Partly Cloudy,2,31224
+TX,Partly Cloudy,3,11303
+TX,Partly Cloudy,4,88
+UT,Clear,1,3
+UT,Clear,2,1975
+UT,Clear,3,2302
+UT,Clear,4,1
+UT,Fair,1,120
+UT,Fair,2,4465
+UT,Fair,3,2417
+UT,Fair,4,57
+UT,Mostly Cloudy,1,29
+UT,Mostly Cloudy,2,2352
+UT,Mostly Cloudy,3,2257
+UT,Mostly Cloudy,4,15
+UT,Overcast,2,745
+UT,Overcast,3,987
+UT,Overcast,4,2
+UT,Partly Cloudy,1,30
+UT,Partly Cloudy,2,1753
+UT,Partly Cloudy,3,1488
+UT,Partly Cloudy,4,18
+VA,Clear,1,5
+VA,Clear,2,7517
+VA,Clear,3,6874
+VA,Clear,4,22
+VA,Fair,1,615
+VA,Fair,2,10916
+VA,Fair,3,8524
+VA,Fair,4,401
+VA,Mostly Cloudy,1,190
+VA,Mostly Cloudy,2,6637
+VA,Mostly Cloudy,3,6687
+VA,Mostly Cloudy,4,147
+VA,Overcast,1,4
+VA,Overcast,2,4659
+VA,Overcast,3,4338
+VA,Overcast,4,8
+VA,Partly Cloudy,1,140
+VA,Partly Cloudy,2,4015
+VA,Partly Cloudy,3,4120
+VA,Partly Cloudy,4,105
+VT,Clear,2,42
+VT,Clear,3,13
+VT,Fair,1,1
+VT,Fair,2,38
+VT,Fair,3,39
+VT,Fair,4,3
+VT,Mostly Cloudy,2,35
+VT,Mostly Cloudy,3,29
+VT,Mostly Cloudy,4,3
+VT,Overcast,2,43
+VT,Overcast,3,17
+VT,Partly Cloudy,2,15
+VT,Partly Cloudy,3,13
+VT,Partly Cloudy,4,3
+WA,Clear,1,9
+WA,Clear,2,6138
+WA,Clear,3,3842
+WA,Clear,4,8
+WA,Fair,1,154
+WA,Fair,2,4118
+WA,Fair,3,3236
+WA,Fair,4,58
+WA,Mostly Cloudy,1,52
+WA,Mostly Cloudy,2,5463
+WA,Mostly Cloudy,3,3522
+WA,Mostly Cloudy,4,25
+WA,Overcast,1,5
+WA,Overcast,2,5534
+WA,Overcast,3,3438
+WA,Overcast,4,5
+WA,Partly Cloudy,1,25
+WA,Partly Cloudy,2,2347
+WA,Partly Cloudy,3,1542
+WA,Partly Cloudy,4,15
+WI,Clear,2,844
+WI,Clear,3,1129
+WI,Clear,4,3
+WI,Fair,1,25
+WI,Fair,2,1873
+WI,Fair,3,1375
+WI,Fair,4,42
+WI,Mostly Cloudy,1,11
+WI,Mostly Cloudy,2,1208
+WI,Mostly Cloudy,3,1117
+WI,Mostly Cloudy,4,19
+WI,Overcast,2,684
+WI,Overcast,3,884
+WI,Partly Cloudy,1,5
+WI,Partly Cloudy,2,652
+WI,Partly Cloudy,3,689
+WI,Partly Cloudy,4,22
+WV,Clear,1,1
+WV,Clear,2,22
+WV,Clear,3,46
+WV,Clear,4,5
+WV,Fair,2,18
+WV,Fair,3,22
+WV,Fair,4,34
+WV,Mostly Cloudy,2,11
+WV,Mostly Cloudy,3,19
+WV,Mostly Cloudy,4,19
+WV,Overcast,2,13
+WV,Overcast,3,41
+WV,Overcast,4,4
+WV,Partly Cloudy,2,6
+WV,Partly Cloudy,3,7
+WV,Partly Cloudy,4,9
+WY,Clear,2,16
+WY,Clear,3,17
+WY,Clear,4,2
+WY,Fair,2,4
+WY,Fair,3,10
+WY,Fair,4,13
+WY,Mostly Cloudy,2,2
+WY,Mostly Cloudy,3,10
+WY,Mostly Cloudy,4,1
+WY,Overcast,2,3
+WY,Overcast,3,48
+WY,Overcast,4,1
+WY,Partly Cloudy,2,1
+WY,Partly Cloudy,3,5
+WY,Partly Cloudy,4,1
