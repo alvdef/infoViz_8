@@ -182,3 +182,5 @@ Pipfile.lock
 *.env.local
 .env.*
 
+# Data files
+preprocessing/raw_data.csv
