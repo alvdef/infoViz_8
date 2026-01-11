@@ -1,24 +1,26 @@
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 import { state } from "../state.js";
-import { 
-  getStateNameFromCode, 
-  formatNumber, 
-  formatPercent, 
-  showTooltip, 
-  hideTooltip, 
-  updateTooltipPosition 
+import {
+  getStateNameFromCode,
+  formatNumber,
+  formatPercent,
+  showTooltip,
+  hideTooltip,
+  updateTooltipPosition
 } from "../utils.js";
 
 // Stacked bar chart globals
 let severityChartSvg, severityChartGroup, severityEmptyText;
 let severityXScale, severityYScale, severityColorScale;
 const severitySubgroups = ["Low", "High"];
-const severityColors = ["#fcae91", "#cb181d"];
+const severityColors = ["#fed8b1", "#c2410c"]; // Light/dark orange for consistency
 let severityChartInitialized = false;
+let onFilterChangeCallback = null; // Callback for filter updates
 const severityChartMargin = { top: 40, right: 24, bottom: 60, left: 70 };
 const severityChartSize = { width: 700, height: 280 };
 
-export function initWeatherSeverityChart() {
+export function initWeatherSeverityChart(onFilterChange) {
+  if (onFilterChange) onFilterChangeCallback = onFilterChange;
   if (severityChartInitialized) return;
 
   const container = d3.select("#weather-severity-chart");
@@ -110,11 +112,11 @@ export function updateWeatherSeverityChart() {
 
   const stateCode = (state.selectedState || "").toUpperCase();
   const stateName = stateCode ? getStateNameFromCode(stateCode) : "USA";
-  
+
   let rows = state.selectedState
     ? state.severityWeatherData.filter((d) => d.state === stateCode)
     : state.severityWeatherData;
-    
+
   // We now group by the 5 main categories derived from global filters.
   if (state.weatherFilter !== "all" && rows.length > 0) {
     rows = rows.filter(d => d[state.weatherFilter]);
@@ -141,7 +143,7 @@ export function updateWeatherSeverityChart() {
     let group = null;
     if (sev === 1 || sev === 2) group = "Low";
     if (sev === 3 || sev === 4) group = "High";
-    
+
     if (!group) return;
 
     categories.forEach(cat => {
@@ -154,13 +156,19 @@ export function updateWeatherSeverityChart() {
   const top = Array.from(categoryMap.values()); // Show all 5 categories
 
   const label = d3.select("#weather-severity-state-label");
+  const weatherText = state.weatherFilter !== "all"
+    ? ` | Filter: ${categories.find(c => c.key === state.weatherFilter)?.label || state.weatherFilter}`
+    : "";
+
   if (!state.selectedState) {
-    label.text(`National View`);
+    label.text(`National View${weatherText}`);
   } else {
-    label.text(`${stateCode} – ${stateName}`);
+    label.text(`${stateCode} – ${stateName}${weatherText}`);
   }
 
-  if (!top.length) {
+  const allZero = top.every(d => severitySubgroups.every(s => d[s] === 0));
+
+  if (!top.length || allZero) {
     severityChartGroup.selectAll(".severity-layer").remove();
     severityEmptyText.style("display", "block");
     return;
@@ -219,6 +227,25 @@ export function updateWeatherSeverityChart() {
     .on("mouseover", severityMouseover)
     .on("mousemove", severityMousemove)
     .on("mouseleave", severityMouseleave)
+    .on("click", (event, d) => {
+      // d.data is the row object, d.data.Weather_Condition contains the label
+      // We need to map back to the key (e.g. "Rain / Storm" -> "isRain")
+      // BUT current implementation of updateWeatherSeverityChart constructs top array 
+      // where d.data.Weather_Condition is the Label.
+      // We need to lookup the key.
+      const label = d.data.Weather_Condition;
+      const categories = [
+        { label: "Rain / Storm", key: "isRain" },
+        { label: "Snow / Ice", key: "isSnow" },
+        { label: "Fog / Mist", key: "isFog" },
+        { label: "Clear sky", key: "isClear" },
+        { label: "Cloudy", key: "isCloud" },
+      ];
+      const match = categories.find(c => c.label === label);
+      if (match && onFilterChangeCallback) {
+        onFilterChangeCallback(match.key);
+      }
+    })
     .transition()
     .duration(600)
     .attr("y", (d) => severityYScale(d[1]))
@@ -230,7 +257,25 @@ export function updateWeatherSeverityChart() {
     .attr("x", (d) => severityXScale(d.data.Weather_Condition))
     .attr("width", () => severityXScale.bandwidth())
     .attr("y", (d) => severityYScale(d[1]))
-    .attr("height", (d) => severityYScale(d[0]) - severityYScale(d[1]));
+    .attr("height", (d) => severityYScale(d[0]) - severityYScale(d[1]))
+    .attr("opacity", (d) => {
+      // Visual feedback: dim non-selected bars if a filter is active
+      if (state.weatherFilter !== "all") {
+        const label = d.data.Weather_Condition;
+        const categories = [
+          { label: "Rain / Storm", key: "isRain" },
+          { label: "Snow / Ice", key: "isSnow" },
+          { label: "Fog / Mist", key: "isFog" },
+          { label: "Clear sky", key: "isClear" },
+          { label: "Cloudy", key: "isCloud" },
+        ];
+        const match = categories.find(c => c.label === label);
+        if (match && match.key !== state.weatherFilter) {
+          return 0.3;
+        }
+      }
+      return 1;
+    });
 
   rects
     .exit()
@@ -238,8 +283,6 @@ export function updateWeatherSeverityChart() {
     .duration(400)
     .attr("height", 0)
     .remove();
-
-  // Annotations removed as requested
 }
 
 function severityMouseover(event, d) {
@@ -272,27 +315,27 @@ export function updateStateSeveritySummary() {
   if (container.empty()) return;
 
   let counts = { 1: 0, 2: 0, 3: 0, 4: 0 };
-  
+
   if (state.selectedState) {
-      const stateCode = (state.selectedState || "").toUpperCase();
-      counts = state.severityCounts.get(stateCode) || { 1: 0, 2: 0, 3: 0, 4: 0 };
+    const stateCode = (state.selectedState || "").toUpperCase();
+    counts = state.severityCounts.get(stateCode) || { 1: 0, 2: 0, 3: 0, 4: 0 };
   } else {
-      // Aggregate all
-      state.severityCounts.forEach(c => {
-          counts[1] += c[1];
-          counts[2] += c[2];
-          counts[3] += c[3];
-          counts[4] += c[4];
-      });
+    // Aggregate all
+    state.severityCounts.forEach(c => {
+      counts[1] += c[1];
+      counts[2] += c[2];
+      counts[3] += c[3];
+      counts[4] += c[4];
+    });
   }
   const lowCount = (counts[1] || 0) + (counts[2] || 0);
   const highCount = (counts[3] || 0) + (counts[4] || 0);
   const total = lowCount + highCount;
-  
+
   const data = [
-      { level: "Low", count: lowCount, color: severityColors[0] },
-      { level: "High", count: highCount, color: severityColors[1] }
-  ].map(d => ({...d, share: total ? d.count / total : 0 }));
+    { level: "Low", count: lowCount, color: severityColors[0] },
+    { level: "High", count: highCount, color: severityColors[1] }
+  ].map(d => ({ ...d, share: total ? d.count / total : 0 }));
 
   const chips = container.selectAll(".severity-chip").data(data, (d) => d.level);
 

@@ -31,10 +31,7 @@ export function initWeatherBubble() {
   bubbleXScale = d3.scaleLinear().domain([0, 100]).range([0, innerWidth]);
   bubbleYScale = d3.scaleLinear().domain([-28, 45]).range([innerHeight, 0]);
   bubbleSizeScale = d3.scaleSqrt().range([2, 20]);
-  bubbleColorScale = d3
-    .scaleSequential(d3.interpolateYlOrRd)
-    .domain([0, 0.15])
-    .clamp(true);
+  // bubbleColorScale will be set dynamically in updateWeatherBubble()
 
   const xAxis = d3.axisBottom(bubbleXScale).ticks(10).tickFormat((d) => `${d}%`);
   const yAxis = d3.axisLeft(bubbleYScale).ticks(10).tickFormat((d) => `${d}°C`);
@@ -136,9 +133,9 @@ export function updateWeatherBubble() {
 
   const stateCode = (state.selectedState || "").toUpperCase();
   const stateName = stateCode ? getStateNameFromCode(stateCode) : "USA";
-  
+
   // If state selected, filter data. Else use all data.
-  const baseData = state.selectedState 
+  const baseData = state.selectedState
     ? state.weatherData.filter((d) => d.state === stateCode)
     : state.weatherData;
 
@@ -170,6 +167,15 @@ export function updateWeatherBubble() {
   }));
 
   bubbleSizeScale.domain([0, maxCount || 1]);
+
+  // Dynamic color scale based on actual riskRatio range in this data subset
+  const riskExtent = d3.extent(binnedArray, d => d.riskRatio);
+  const minRisk = riskExtent[0] || 0;
+  const maxRisk = riskExtent[1] || 0.1;
+  // Use Oranges for consistency with other severity charts
+  // Custom interpolator to avoid too-light colors
+  const customOranges = (t) => d3.interpolateOranges(0.2 + 0.8 * t);
+  bubbleColorScale = d3.scaleSequential(customOranges).domain([minRisk, maxRisk]).clamp(true);
 
   const circles = bubbleGroup
     .selectAll("circle.bubble")
@@ -223,11 +229,11 @@ export function updateWeatherBubble() {
 
   const captionFilter =
     state.weatherFilter === "all" ? "" : ` | Filter: ${filterLabels[state.weatherFilter] || state.weatherFilter}`;
-  
+
   // Simplified caption logic
   const countStr = formatNumber(baseData.length);
   const locationStr = state.selectedState ? `${stateCode} – ${stateName}` : "National View";
-  
+
   d3.select("#bubble-state-caption").text(
     `${locationStr}: ${countStr} accidents${captionFilter}`
   );

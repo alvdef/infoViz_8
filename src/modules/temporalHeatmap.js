@@ -1,11 +1,11 @@
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 import { state } from "../state.js";
-import { 
-  getStateNameFromCode, 
-  formatNumber, 
-  showTooltip, 
-  hideTooltip, 
-  updateTooltipPosition 
+import {
+  getStateNameFromCode,
+  formatNumber,
+  showTooltip,
+  hideTooltip,
+  updateTooltipPosition
 } from "../utils.js";
 
 // Temporal heatmap globals
@@ -18,7 +18,7 @@ const temporalSize = { width: 820, height: 220 };
 const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export function setTemporalMode(mode) {
-    temporalMode = mode;
+  temporalMode = mode;
 }
 
 export function initTemporalHeatmap() {
@@ -87,7 +87,7 @@ export function updateTemporalHeatmap() {
 
   const stateCode = (state.selectedState || "").toUpperCase();
   const stateName = stateCode ? getStateNameFromCode(stateCode) : "USA";
-  
+
   // If state selected, filter data. Else use all data.
   // Filter by state
   let rows = state.selectedState
@@ -98,9 +98,9 @@ export function updateTemporalHeatmap() {
   if (state.weatherFilter !== "all" && rows.length > 0) {
     rows = rows.filter(d => d[state.weatherFilter]);
   }
-  
+
   const hasData = rows.length > 0;
-  
+
   // Note: Temporal heatmap relies on `temporalData`.
   // The logic below aggregates whatever is in `rows` into `cellMap`.
 
@@ -108,7 +108,7 @@ export function updateTemporalHeatmap() {
   rows.forEach((row) => {
     const key = `${row.dayOfWeek}|${row.hourOfDay}`;
     const existing = cellMap.get(key) || { totalAcc: 0, severeAcc: 0, sumSeverity: 0 };
-    
+
     // Support for both pre-aggregated (row.totalAcc) and individual rows
     const count = row.totalAcc !== undefined ? row.totalAcc : 1;
     const isSevere = row.severeAcc !== undefined ? row.severeAcc : (row.severity >= 3 ? 1 : 0);
@@ -131,10 +131,10 @@ export function updateTemporalHeatmap() {
       };
       let value = 0;
       if (state.currentMetric === "count") {
-          value = row.totalAcc;
+        value = row.totalAcc;
       } else {
-          // Average severity
-          value = row.totalAcc > 0 ? row.sumSeverity / row.totalAcc : 0;
+        // Average severity
+        value = row.totalAcc > 0 ? row.sumSeverity / row.totalAcc : 0;
       }
 
       grid.push({
@@ -150,13 +150,16 @@ export function updateTemporalHeatmap() {
 
   // Define scale based on metric
   if (state.currentMetric === "count") {
-      const maxVal = d3.max(grid, (d) => d.value) || 1;
-      temporalColorScale = d3.scaleSequential(d3.interpolateBlues).domain([0, maxVal]);
+    const maxVal = d3.max(grid, (d) => d.value) || 1;
+    temporalColorScale = d3.scaleSequential(d3.interpolateBlues).domain([0, maxVal]);
   } else {
-      // User requested explicit [2, 3] domain for better contrast in severity average
-      // Custom interpolator to avoid "too light" colors at the low end
-      const customOranges = (t) => d3.interpolateOranges(0.3 + 0.7 * t);
-      temporalColorScale = d3.scaleSequential(customOranges).domain([2, 3]).clamp(true);
+    // Dynamic domain based on actual avgSeverity range
+    const sevExtent = d3.extent(grid.filter(d => d.value > 0), (d) => d.value);
+    const minSev = sevExtent[0] || 2;
+    const maxSev = sevExtent[1] || 3;
+    // Custom interpolator to avoid too-light colors
+    const customOranges = (t) => d3.interpolateOranges(0.2 + 0.8 * t);
+    temporalColorScale = d3.scaleSequential(customOranges).domain([minSev, maxSev]).clamp(true);
   }
 
   temporalGroup
@@ -195,7 +198,7 @@ export function updateTemporalHeatmap() {
       const dayLabel = dayLabels[d.day] || d.day;
       const metricLabel = state.currentMetric === "count" ? "Total Accidents" : "Avg Severity";
       const metricVal = state.currentMetric === "count" ? formatNumber(d.totalAcc) : formatNumber(d.avgSeverity, 2);
-      
+
       const html = `<strong>${dayLabel}, ${d.hour}:00–${(d.hour + 1) % 24}:00</strong><br/>
                     ${metricLabel}: ${metricVal}<br/>
                     <small>High severity count: ${formatNumber(d.severeAcc)}</small>`;
@@ -217,7 +220,16 @@ export function updateTemporalHeatmap() {
 
   cells.exit().remove();
 
-  const locationStr = state.selectedState ? `${stateCode} – ${stateName}` : "National View";
+  const wLabels = {
+    all: "All",
+    isRain: "Rain",
+    isSnow: "Snow",
+    isFog: "Fog",
+    isClear: "Clear",
+    isCloud: "Cloudy"
+  };
+  const weatherStr = state.weatherFilter !== "all" ? ` | Weather: ${wLabels[state.weatherFilter] || state.weatherFilter}` : "";
+  const locationStr = (state.selectedState ? `${stateCode} – ${stateName}` : "National View") + weatherStr;
   d3.select("#temporal-caption").text(locationStr);
 
   if (grid.every((d) => d.value === 0)) {

@@ -36,17 +36,10 @@
             <span class="legend-label" id="legend-label-high"></span>
             <span class="legend-value" id="legend-max"></span>
           </div>
-          <div id="global-weather-filters" class="controls">
-            <span>Filter by weather:</span>
-            <div id="weather-filters">
-              <button class="filter-btn active" value="all">All conditions</button>
-              <button class="filter-btn" value="isRain">Rain / Storm</button>
-              <button class="filter-btn" value="isSnow">Snow / Ice</button>
-              <button class="filter-btn" value="isFog">Fog / Mist</button>
-              <button class="filter-btn" value="isClear">Clear sky</button>
-              <button class="filter-btn" value="isCloud">Cloudy</button>
-            </div>
-          </div>
+        </div>
+        <div id="active-filters" class="controls">
+          <strong>Current filters:</strong> <span id="filter-display">None</span>
+          <span class="filter-instruction">(Click chart segments to filter)</span>
         </div>
       </div>
       <p id="metric-description"></p>
