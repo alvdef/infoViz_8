@@ -1,4 +1,5 @@
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+import { hexbin as d3Hexbin } from "https://cdn.jsdelivr.net/npm/d3-hexbin@0.2/+esm";
 import { state } from "../state.js";
 import {
   extractStateCode,
@@ -14,265 +15,440 @@ import { updateWeatherBubble } from "./weatherBubble.js";
 import { updateWeatherSeverityChart, updateStateSeveritySummary } from "./severityChart.js";
 import { updateTemporalHeatmap } from "./temporalHeatmap.js";
 
-// Map chart globals
-let mapSvg, mapGroup, projection, pathGenerator, colorScale;
+// Layout + projection
 const mapMargin = { top: 10, right: 10, bottom: 10, left: 10 };
-let resizeTimer;
+let width = 900;
+let height = 500;
+let innerWidth = 880;
+let innerHeight = 480;
+let projection = d3.geoAlbersUsa();
+let pathGenerator = d3.geoPath(projection);
 
+// Containers and layers
+let mapContainer;
+let mapSvg;
+let rootG;
+let zoomContent;
+let statesLayer;
+let aggregationLayer;
+
+// Behaviors + state
+let hexbinGenerator = d3Hexbin();
+let colorScale = d3.scaleSequential(d3.interpolateBlues);
+let resizeTimer = null;
 let onStateSelectCallback = null;
 
-export function initMap(onStateSelect) {
-  if (onStateSelect) onStateSelectCallback = onStateSelect;
-  const container = d3.select("#map");
-  mapSvg = container.append("svg");
-  mapGroup = mapSvg.append("g");
+// Data caches
+let basePoints = []; // { id, data, lon, lat, stateCode }
+let projectedPoints = []; // { ...base, x, y }
+let cachedFiltered = [];
+let cachedBins = [];
+const pointStateCache = new WeakMap();
 
-  updateColorScale();
-  updateLegend();
-  renderMap();
+export function initMap(geojsonOrCallback, data, svg, initialMetric, onStateSelect) {
+  // Flexible signature to remain compatible with previous usage.
+  if (typeof geojsonOrCallback === "function") {
+    onStateSelectCallback = geojsonOrCallback;
+  } else if (geojsonOrCallback) {
+    state.usStates = geojsonOrCallback;
+  }
+  if (typeof onStateSelect === "function") {
+    onStateSelectCallback = onStateSelect;
+  }
+  if (Array.isArray(data) && data.length) {
+    state.weatherData = data;
+  }
+  const metric = normalizeMetric(initialMetric || state.currentMetric);
+  state.currentMetric = metric;
 
+  mapContainer = d3.select("#map");
+  mapContainer.style("position", "relative");
+  mapSvg = svg ? d3.select(svg) : mapContainer.append("svg");
+  rootG = mapSvg.append("g");
+  zoomContent = rootG.append("g").attr("class", "zoom-content");
+  statesLayer = zoomContent.append("g").attr("class", "states-layer");
+  aggregationLayer = zoomContent.append("g").attr("class", "aggregation-layer");
+
+  updateDimensions();
+  buildBasePoints(state.weatherData);
+  reprojectPoints();
+  renderStates();
+  updateMap();
   window.addEventListener("resize", handleResize);
 }
 
-function getMapDimensions() {
-  const containerNode = d3.select("#map").node();
-  const containerWidth = containerNode ? containerNode.getBoundingClientRect().width : 900;
-  const width = Math.max(320, Math.min(containerWidth, 1200));
-  const height = Math.max(320, Math.round(width * 0.55));
-  return { width, height };
-}
-
-function renderMap() {
-  const { width, height } = getMapDimensions();
-  const innerWidth = width - mapMargin.left - mapMargin.right;
-  const innerHeight = height - mapMargin.top - mapMargin.bottom;
+function updateDimensions() {
+  const dims = getMapDimensions();
+  width = dims.width;
+  height = dims.height;
+  innerWidth = width - mapMargin.left - mapMargin.right;
+  innerHeight = height - mapMargin.top - mapMargin.bottom;
 
   mapSvg.attr("width", width).attr("height", height);
-  mapGroup.attr("transform", `translate(${mapMargin.left},${mapMargin.top})`);
+  rootG.attr("transform", `translate(${mapMargin.left},${mapMargin.top})`);
 
-  projection = d3.geoAlbersUsa().fitSize([innerWidth, innerHeight], state.usStates);
+  if (state.usStates) {
+    projection = d3.geoAlbersUsa().fitSize([innerWidth, innerHeight], state.usStates);
+  } else {
+    projection = d3.geoAlbersUsa().translate([innerWidth / 2, innerHeight / 2]);
+  }
   pathGenerator = d3.geoPath().projection(projection);
+  hexbinGenerator = d3Hexbin().extent([[0, 0], [innerWidth, innerHeight]]);
+}
 
-  const states = mapGroup
+function getMapDimensions() {
+  const node = d3.select("#map").node();
+  const containerWidth = node ? node.getBoundingClientRect().width : 900;
+  const w = Math.max(320, Math.min(containerWidth, 1200));
+  const h = Math.max(320, Math.round(w * 0.55));
+  return { width: w, height: h };
+}
+
+function buildBasePoints(data = []) {
+  basePoints = [];
+  data.forEach((d, i) => {
+    const coords = getCoordinates(d);
+    if (!coords) return;
+    const stateCode = inferStateCode(d, coords);
+    basePoints.push({
+      id: i,
+      data: d,
+      lon: coords.lon,
+      lat: coords.lat,
+      stateCode
+    });
+  });
+}
+
+function getCoordinates(d) {
+  const lonCandidates = [d.lng, d.lon, d.longitude, d.start_lng, d.Start_Lng, d.Start_Longitude];
+  const latCandidates = [d.lat, d.latitude, d.start_lat, d.Start_Lat, d.Start_Latitude];
+  const lonVal = lonCandidates.find((v) => Number.isFinite(+v));
+  const latVal = latCandidates.find((v) => Number.isFinite(+v));
+  const lon = Number.isFinite(+lonVal) ? +lonVal : null;
+  const lat = Number.isFinite(+latVal) ? +latVal : null;
+  if (!Number.isFinite(lon) || !Number.isFinite(lat)) return null;
+  return { lon, lat };
+}
+
+function inferStateCode(d, coords) {
+  if (pointStateCache.has(d)) return pointStateCache.get(d);
+  let code = (d.state || d.State || "").toString().trim().toUpperCase();
+  if (!code && state.usStates) {
+    for (const feature of state.usStates.features) {
+      if (d3.geoContains(feature, [coords.lon, coords.lat])) {
+        code = extractStateCode(feature);
+        break;
+      }
+    }
+  }
+  pointStateCache.set(d, code);
+  return code;
+}
+
+function reprojectPoints() {
+  projectedPoints = [];
+  basePoints.forEach((p) => {
+    const proj = projection([p.lon, p.lat]);
+    if (!proj) return;
+    projectedPoints.push({
+      ...p,
+      x: proj[0],
+      y: proj[1],
+    });
+  });
+}
+
+function renderStates() {
+  if (!state.usStates) return;
+  const states = statesLayer
     .selectAll("path.state")
     .data(state.usStates.features, (d) => extractStateCode(d));
 
-  states
-    .enter()
+  states.enter()
     .append("path")
     .attr("class", "state")
-    .attr("stroke", "#ffffff")
+    .attr("fill", "#f9fafb")
+    .attr("stroke", "#cbd5e1")
     .attr("stroke-width", 0.7)
+    .attr("vector-effect", "non-scaling-stroke")
+    .on("click", (event, d) => handleStateClick(extractStateCode(d)))
     .on("mouseover", function (event, d) {
       const code = extractStateCode(d);
       const name = extractStateName(d);
-
-      // Calculate dynamic stats
-      const rows = state.weatherData.filter(r =>
-        r.state === code &&
-        (state.weatherFilter === "all" || r[state.weatherFilter])
+      const rows = state.weatherData.filter((r) =>
+        matchWeather(r) &&
+        (!state.selectedState || r.state === state.selectedState) &&
+        r.state === code
       );
-
-      let html;
-      if (rows.length === 0) {
-        html = `<strong>${name} (${code})</strong><br/>No data matching filter`;
-      } else {
-        const count = rows.length;
-        const avgSev = rows.reduce((acc, r) => acc + r.severity, 0) / count;
-        html = `<strong>${name} (${code})</strong><br/>Accidents: ${formatNumber(
-          count,
-        )}<br/>Avg severity: ${formatSeverity(avgSev)}`;
-      }
-
-      d3.select(this).attr("stroke-width", 1.5);
+      const count = rows.length;
+      const avgSev = rows.length ? rows.reduce((acc, r) => acc + (+r.severity || 0), 0) / rows.length : 0;
+      const html = rows.length
+        ? `<strong>${name} (${code})</strong><br/>Accidents: ${formatNumber(count)}<br/>Avg severity: ${formatSeverity(avgSev)}`
+        : `<strong>${name} (${code})</strong><br/>No data matching filter`;
+      d3.select(this).attr("stroke-width", 1.2);
       showTooltip(html, event);
     })
-    .on("mousemove", (event) => {
-      updateTooltipPosition(event);
-    })
+    .on("mousemove", (event) => updateTooltipPosition(event))
     .on("mouseout", function () {
       d3.select(this).attr("stroke-width", 0.7);
       hideTooltip();
     })
-    .on("click", function (event, d) {
-      const code = extractStateCode(d);
-      if (!code) return;
-
-      // Use callback if available to handle state change and global updates
-      if (onStateSelectCallback) {
-        // Toggle logic should be handled here or in the callback.
-        // Let's pass the code, and let the callback handle toggle if it matches current.
-        // Actually, to keep it simple, we can do the toggle check here or pass it.
-        // script.js handleMapStateChange expects "newState".
-        let newState = code;
-        if (state.selectedState === code) {
-          newState = null; // Toggle off
-        }
-        onStateSelectCallback(newState);
-      } else {
-        // Fallback for safety
-        if (state.selectedState === code) {
-          state.selectedState = null;
-        } else {
-          state.selectedState = code;
-        }
-        // Update local highlights immediately (though typically callback -> updateAll -> updateMapColors handles this)
-        // We will leave the class toggling to updateMapColors/renderMap re-run or handle it efficiently.
-        // For now, let's trust the callback chain.
-      }
-    })
     .merge(states)
     .attr("d", pathGenerator)
-    .attr("fill", (d) => {
-      const code = extractStateCode(d);
-      return colorScale(getMetricValue(code));
-    });
+    .classed("selected", (d) => extractStateCode(d) === state.selectedState)
+    .attr("stroke", (d) => extractStateCode(d) === state.selectedState ? "#111827" : "#cbd5e1");
 
   states.exit().remove();
+}
 
-  // Highlight default selection if present.
-  if (state.selectedState) {
-    mapGroup
-      .selectAll(".state")
-      .filter((d) => extractStateCode(d) === state.selectedState)
-      .classed("selected", true);
+function handleStateClick(code) {
+  if (!code) return;
+  state.selectedCluster = null; // clear cluster when selecting via states
+  const newState = state.selectedState === code ? null : code;
+  if (onStateSelectCallback) {
+    onStateSelectCallback(newState);
+  } else {
+    state.selectedState = newState;
+    updateWeatherBubble();
+    updateWeatherSeverityChart();
+    updateTemporalHeatmap();
+    updateStateSeveritySummary();
+    updateMap();
   }
 }
 
-function handleResize() {
-  clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => {
-    renderMap();
-  }, 150);
+function getFilteredPoints() {
+  return projectedPoints.filter((p) => {
+    if (state.selectedState) {
+      if (!p.stateCode || p.stateCode !== state.selectedState) return false;
+    }
+    if (!matchWeather(p.data)) return false;
+    return true;
+  });
 }
 
-function updateColorScale() {
-  if (state.currentMetric === "count") {
-    // Calculate max count across all states given current filter
-    const counts = state.usStates.features.map(f => {
-      const code = extractStateCode(f);
-      return getMetricValue(code);
+function matchWeather(row) {
+  const key = state.weatherFilter;
+  if (!key || key.toLowerCase() === "all") return true;
+  return !!row[key];
+}
+
+export function updateMap() {
+  const filtered = getFilteredPoints();
+  cachedFiltered = filtered;
+
+  const aggregations = buildAggregations(filtered);
+  cachedBins = aggregations || [];
+  updateColorScale(filtered, aggregations);
+  updateLegend();
+  updateMapTitle();
+  renderStates();
+
+  aggregationLayer.selectAll("path.hex").remove();
+  renderAggregation(aggregations);
+}
+
+export function updateMapColors() {
+  updateMap();
+}
+
+function buildAggregations(points) {
+  if (!points.length) return [];
+  const radius = getHexRadius();
+  const generator = hexbinGenerator.radius(radius);
+  const bins = generator(points.map((p) => [p.x, p.y, p]));
+  return bins.map((bin) => {
+    const count = bin.length;
+    const avgSeverity = d3.mean(bin, (b) => b[2].data.severity);
+    const stateCounts = new Map();
+    const rawRows = [];
+    let lonSum = 0;
+    let latSum = 0;
+    let coordCount = 0;
+    bin.forEach((b) => {
+      rawRows.push(b[2].data);
+      const sc = b[2].stateCode;
+      if (!sc) return;
+      stateCounts.set(sc, (stateCounts.get(sc) || 0) + 1);
+      if (Number.isFinite(b[2].lon) && Number.isFinite(b[2].lat)) {
+        lonSum += b[2].lon;
+        latSum += b[2].lat;
+        coordCount += 1;
+      }
+    });
+    const topState = Array.from(stateCounts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+    return {
+      x: bin.x,
+      y: bin.y,
+      count,
+      avgSeverity: Number.isFinite(avgSeverity) ? avgSeverity : 0,
+      stateCode: topState,
+      points: rawRows,
+      centerLon: coordCount ? lonSum / coordCount : null,
+      centerLat: coordCount ? latSum / coordCount : null
+    };
+  });
+}
+
+function renderAggregation(bins) {
+  const metric = normalizeMetric(state.currentMetric);
+  const maxCount = d3.max(bins, (d) => d.count) || 1;
+  const radiusBase = getHexRadius();
+  const radiusScale = d3.scaleSqrt().domain([0, maxCount]).range([radiusBase * 0.6, radiusBase * 1.8]);
+
+  const hexes = aggregationLayer
+    .selectAll("path.hex")
+    .data(bins, (d) => `${Math.round(d.x)}-${Math.round(d.y)}-${Math.round(radiusBase)}`);
+
+  hexes.enter()
+    .append("path")
+    .attr("class", "hex")
+    .attr("stroke", "#ffffff")
+    .attr("stroke-width", 0.6)
+    .attr("vector-effect", "non-scaling-stroke")
+    .on("click", (event, d) => {
+      const clusterId = `${Math.round(d.x)}-${Math.round(d.y)}`;
+      const isSameCluster = state.selectedCluster && state.selectedCluster.id === clusterId;
+      if (isSameCluster) {
+        state.selectedCluster = null;
+        state.selectedState = state.selectedState; // keep current state selection unchanged
+      } else {
+        // Store cluster selection and propagate state selection
+        state.selectedCluster = {
+          id: clusterId,
+          points: d.points || [],
+          stateCode: d.stateCode || null
+        };
+        // Do not override existing state selection when clicking a cluster
+      }
+      const nextState = state.selectedState;
+      if (onStateSelectCallback) {
+        onStateSelectCallback(nextState);
+      } else {
+        updateWeatherBubble();
+        updateWeatherSeverityChart();
+        updateTemporalHeatmap();
+        updateStateSeveritySummary();
+        updateMap();
+      }
+    })
+    .on("mousemove", (event, d) => {
+      const topStateLabel = d.stateCode ? `Top state: ${d.stateCode}` : "Top state: mixed/unknown";
+      const locationLabel = Number.isFinite(d.centerLat) && Number.isFinite(d.centerLon)
+        ? `Location: ${d.centerLat.toFixed(3)}, ${d.centerLon.toFixed(3)}`
+        : "Location: n/a";
+      const html = `<strong>Cluster</strong><br/>Count: ${formatCount(d.count)}${
+        metric === "severity" ? `<br/>Avg severity: ${formatSeverity(d.avgSeverity)}` : ""
+      }<br/>${topStateLabel}<br/>${locationLabel}`;
+      showTooltip(html, event);
+    })
+    .on("mouseout", hideTooltip)
+    .merge(hexes)
+    .attr("transform", (d) => `translate(${d.x},${d.y})`)
+    .attr("d", (d) => hexbinGenerator.hexagon(radiusScale(d.count)))
+    .attr("fill", (d) => metric === "severity" ? colorScale(d.avgSeverity) : colorScale(d.count))
+    .attr("fill-opacity", (d) => {
+      const isSelected = state.selectedCluster && state.selectedCluster.id === `${Math.round(d.x)}-${Math.round(d.y)}`;
+      return isSelected ? 1 : (metric === "severity" ? 0.9 : 0.8);
+    })
+    .attr("stroke", (d) => {
+      const isSelected = state.selectedCluster && state.selectedCluster.id === `${Math.round(d.x)}-${Math.round(d.y)}`;
+      return isSelected ? "#111827" : "#ffffff";
+    })
+    .attr("stroke-width", (d) => {
+      const isSelected = state.selectedCluster && state.selectedCluster.id === `${Math.round(d.x)}-${Math.round(d.y)}`;
+      return isSelected ? 1 : 0.6;
     });
 
-    const maxCount = d3.max(counts) || 1;
-    // Count -> Blue
-    colorScale = d3.scaleSequential(d3.interpolateBlues).domain([0, maxCount]);
-    state.legendRange = { min: 0, max: maxCount };
+  hexes.exit().remove();
+}
+
+// Dot rendering removed (aggregation only)
+
+function getHexRadius() {
+  const base = 8; // finer clusters
+  return base;
+}
+
+function updateColorScale(points, bins) {
+  const metric = normalizeMetric(state.currentMetric);
+  if (metric === "count") {
+    const maxVal = bins && bins.length ? d3.max(bins, (d) => d.count) : points.length || 1;
+    const minVal = Math.min(1, maxVal || 1);
+    const warmRamp = (t) => d3.interpolateYlOrRd(0.25 + 0.75 * t); // avoid very light yellows
+    colorScale = d3.scaleSequentialPow(warmRamp).exponent(0.6).domain([minVal, maxVal || 1]).clamp(true);
+    state.legendRange = { min: minVal, max: maxVal || 1 };
   } else {
-    // Dynamic severity domain based on actual values
-    const values = state.usStates.features.map(f => {
-      const code = extractStateCode(f);
-      return getMetricValue(code);
-    }).filter(v => v > 0);
-
-    const sevExtent = d3.extent(values);
-    const minSev = sevExtent[0] || 2;
-    const maxSev = sevExtent[1] || 3;
-
-    // Custom interpolator to avoid too-light colors
+    const sevExtent = d3.extent(points, (d) => +d.data.severity).map((v) => Number.isFinite(v) ? v : null).filter((v) => v !== null);
+    const minSev = sevExtent.length ? sevExtent[0] : 1;
+    const maxSev = sevExtent.length ? sevExtent[1] : 4;
     const customOranges = (t) => d3.interpolateOranges(0.2 + 0.8 * t);
     colorScale = d3.scaleSequential(customOranges).domain([minSev, maxSev]).clamp(true);
     state.legendRange = { min: minSev, max: maxSev };
   }
 }
 
-export function updateMapColors() {
-  updateColorScale();
-  updateLegend();
-  updateMapTitle();
-
-  mapGroup
-    .selectAll(".state")
-    .transition()
-    .duration(600)
-    .attr("fill", (d) => {
-      const code = extractStateCode(d);
-      return colorScale(getMetricValue(code));
-    });
-}
-
-function getMetricValue(stateCode) {
-  if (!stateCode) return 0;
-
-  // Filter raw data for this state and current weather filter
-  const rows = state.weatherData.filter(d =>
-    d.state === stateCode &&
-    (state.weatherFilter === "all" || d[state.weatherFilter])
-  );
-
-  if (rows.length === 0) return 0;
-
-  if (state.currentMetric === "count") {
-    return rows.length;
-  } else {
-    // Calculate average severity on the fly
-    const sumSev = rows.reduce((acc, r) => acc + r.severity, 0);
-    return sumSev / rows.length;
-  }
-}
-
 export function updateLegend() {
-  const isCount = state.currentMetric === "count";
-  const lowLabel = isCount ? "Low accidents" : "Lower severity";
-  const highLabel = isCount ? "High accidents" : "Higher severity";
+  const metric = normalizeMetric(state.currentMetric);
+  const lowLabel = metric === "count" ? "Lower density" : "Lower severity";
+  const highLabel = metric === "count" ? "Higher density" : "Higher severity";
   const minVal = state.legendRange.min;
   const maxVal = state.legendRange.max;
 
   d3.select("#legend-label-low").text(lowLabel);
   d3.select("#legend-label-high").text(highLabel);
-
   d3.select("#legend-gradient").style(
     "background",
-    isCount
-      ? "linear-gradient(90deg, #eff6ff, #1d4ed8)" // Blue shades (Tailwind Blue 50-700 approx)
-      : "linear-gradient(90deg, #fff7ed, #ea580c)", // Orange shades (Tailwind Orange 50-600 approx)
+    metric === "count"
+      ? "linear-gradient(90deg, #fdd49e, #f16913, #7f2704)"
+      : "linear-gradient(90deg, #fff7ed, #ea580c)"
   );
-
-  d3.select("#legend-min").text(isCount ? formatCount(minVal) : formatSeverity(minVal));
-  d3.select("#legend-max").text(isCount ? formatCount(maxVal) : formatSeverity(maxVal));
+  d3.select("#legend-min").text(metric === "count" ? formatCount(minVal) : formatSeverity(minVal));
+  d3.select("#legend-max").text(metric === "count" ? formatCount(maxVal) : formatSeverity(maxVal));
 }
 
 export function updateMetricDescription(metric) {
-  if (metric === "count") {
+  const normalized = normalizeMetric(metric);
+  if (normalized === "count") {
     d3.select("#metric-description").text(
-      "Total number of reported accidents in each state between 2016 and 2023."
+      "Hex cluster size and color indicate where more accidents are concentrated."
     );
   } else {
     d3.select("#metric-description").text(
-      "Average severity of accidents in each state (1 = minor, 4 = most severe)."
+      "Hex color encodes the average severity of nearby accidents (1 = minor, 4 = most severe)."
     );
   }
 }
 
-
 export function updateMapTitle() {
-  // Map doesn't have a specific caption ID in the HTML provided in the file view?
-  // Checking index.html... it has <p class="subtitle"> under header, but that seems global.
-  // Wait, the map section <section id="map-container"> has:
-  // <h2>Accidents by State</h2>
-  // <p class="subtitle">Identify high-risk states...</p>
-  // The user wants filter info shown. We should append/update this subtitle.
-  // Let's try to target the subtitle within #map-container
-
   const container = d3.select("#map-container");
   const subtitle = container.select(".subtitle");
-
-  const weatherLabel = state.weatherFilter !== "all"
+  const weatherLabel = state.weatherFilter && state.weatherFilter !== "all"
     ? (state.weatherFilter === "isRain" ? "Rain/Storm" :
       state.weatherFilter === "isSnow" ? "Snow/Ice" :
         state.weatherFilter === "isFog" ? "Fog/Mist" :
           state.weatherFilter === "isClear" ? "Clear" :
             state.weatherFilter === "isCloud" ? "Cloudy" : state.weatherFilter)
     : "All weather";
-
-  // We can preserve the original text and append status, or just show status.
-  // Given the request, "Identify high-risk..." is static help text.
-  // Maybe we should replace it or append to it. 
-  // Let's Replace it with dynamic context like other charts.
-
   subtitle.html(`
     Filters: <strong>${weatherLabel}</strong>. 
-    ${state.selectedState ? `State: <strong>${state.selectedState}</strong>` : "National View"}
-    <br/><span style="color:#999; font-size:10px;">(Identify high-risk states and clusters)</span>
+    ${state.selectedCluster?.points?.length ? `Cluster (${state.selectedCluster.points.length} accidents)` : state.selectedState ? `State: <strong>${state.selectedState}</strong>` : "National View"}
+    <br/><span style="color:#999; font-size:10px;">(Aggregation view: smaller hexes for more detail)</span>
   `);
+}
+
+function normalizeMetric(metric) {
+  if (metric === "avgSeverity" || metric === "severity") return "severity";
+  return metric === "count" ? "count" : "severity";
+}
+
+function handleResize() {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    updateDimensions();
+    reprojectPoints();
+    renderStates();
+    updateMap();
+  }, 120);
 }

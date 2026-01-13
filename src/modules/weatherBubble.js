@@ -134,10 +134,11 @@ export function updateWeatherBubble() {
   const stateCode = (state.selectedState || "").toUpperCase();
   const stateName = stateCode ? getStateNameFromCode(stateCode) : "USA";
 
-  // If state selected, filter data. Else use all data.
-  const baseData = state.selectedState
-    ? state.weatherData.filter((d) => d.state === stateCode)
-    : state.weatherData;
+  const baseData = state.selectedCluster?.points?.length
+    ? state.selectedCluster.points
+    : (state.selectedState
+      ? state.weatherData.filter((d) => d.state === stateCode)
+      : state.weatherData);
 
   const filtered =
     state.weatherFilter === "all"
@@ -232,7 +233,9 @@ export function updateWeatherBubble() {
 
   // Simplified caption logic
   const countStr = formatNumber(baseData.length);
-  const locationStr = state.selectedState ? `${stateCode} – ${stateName}` : "National View";
+  const locationStr = state.selectedCluster?.points?.length
+    ? `Cluster (${formatNumber(baseData.length)} pts) ${state.selectedState ? `– ${stateCode}` : ""}`
+    : (state.selectedState ? `${stateCode} – ${stateName}` : "National View");
 
   d3.select("#bubble-state-caption").text(
     `${locationStr}: ${countStr} accidents${captionFilter}`

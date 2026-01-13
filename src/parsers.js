@@ -65,6 +65,10 @@ export function unifiedParser(d) {
     isCloud: d.is_Cloud === "True" || d.is_Cloud === true,
     highSeverity: +d.HighSeverity,
     dayOfWeek: +d.day_of_week,
-    hourOfDay: +d.hour_of_day
+    hourOfDay: +d.hour_of_day,
+    Start_Lat: +d.Start_Lat,
+    Start_Lng: +d.Start_Lng,
+    lat: +d.Start_Lat,
+    lng: +d.Start_Lng
   };
 }
