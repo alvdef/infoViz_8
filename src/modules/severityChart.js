@@ -113,9 +113,11 @@ export function updateWeatherSeverityChart() {
   const stateCode = (state.selectedState || "").toUpperCase();
   const stateName = stateCode ? getStateNameFromCode(stateCode) : "USA";
 
-  let rows = state.selectedState
-    ? state.severityWeatherData.filter((d) => d.state === stateCode)
-    : state.severityWeatherData;
+  let rows = state.selectedCluster?.points?.length
+    ? state.selectedCluster.points
+    : state.selectedState
+      ? state.severityWeatherData.filter((d) => d.state === stateCode)
+      : state.severityWeatherData;
 
   // We now group by the 5 main categories derived from global filters.
   if (state.weatherFilter !== "all" && rows.length > 0) {
@@ -160,7 +162,9 @@ export function updateWeatherSeverityChart() {
     ? ` | Filter: ${categories.find(c => c.key === state.weatherFilter)?.label || state.weatherFilter}`
     : "";
 
-  if (!state.selectedState) {
+  if (state.selectedCluster?.points?.length) {
+    label.text(`Cluster ${state.selectedState ? `(${stateCode} – ${stateName})` : ""}${weatherText}`);
+  } else if (!state.selectedState) {
     label.text(`National View${weatherText}`);
   } else {
     label.text(`${stateCode} – ${stateName}${weatherText}`);
@@ -316,7 +320,12 @@ export function updateStateSeveritySummary() {
 
   let counts = { 1: 0, 2: 0, 3: 0, 4: 0 };
 
-  if (state.selectedState) {
+  if (state.selectedCluster?.points?.length) {
+    state.selectedCluster.points.forEach((d) => {
+      const sev = Math.round(d.severity);
+      if (sev >= 1 && sev <= 4) counts[sev] += 1;
+    });
+  } else if (state.selectedState) {
     const stateCode = (state.selectedState || "").toUpperCase();
     counts = state.severityCounts.get(stateCode) || { 1: 0, 2: 0, 3: 0, 4: 0 };
   } else {

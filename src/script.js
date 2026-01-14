@@ -66,6 +66,7 @@ Promise.all([
 function attachControls() {
   d3.select("#metric-select").on("change", (event) => {
     state.currentMetric = event.target.value;
+    state.selectedCluster = null; // clear cluster selection when metric changes
     updateMetricDescription(state.currentMetric);
     updateMapColors();
     updateTemporalHeatmap();
@@ -90,6 +91,7 @@ function handleWeatherChartFilter(weatherKey) {
   } else {
     state.weatherFilter = weatherKey;
   }
+  state.selectedCluster = null; // clear cluster selection when filter changes
   updateAllCharts();
 }
 
@@ -117,6 +119,10 @@ function updateFilterDisplay() {
   if (state.selectedState) {
     const stateName = getStateNameFromCode(state.selectedState);
     filters.push(`State: ${stateName}`);
+  }
+
+  if (state.selectedCluster && state.selectedCluster.points?.length) {
+    filters.push(`Cluster (${state.selectedCluster.points.length} accidents)`);
   }
 
   if (state.weatherFilter && state.weatherFilter !== "all") {

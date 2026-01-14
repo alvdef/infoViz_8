@@ -29,7 +29,7 @@ export function initWeatherBubble() {
     .attr("transform", `translate(${bubbleMargin.left},${bubbleMargin.top})`);
 
   bubbleXScale = d3.scaleLinear().domain([0, 100]).range([0, innerWidth]);
-  bubbleYScale = d3.scaleLinear().domain([-28, 45]).range([innerHeight, 0]);
+  bubbleYScale = d3.scaleLinear().domain([-38, 45]).range([innerHeight, 0]);
   bubbleSizeScale = d3.scaleSqrt().range([2, 20]);
   // bubbleColorScale will be set dynamically in updateWeatherBubble()
 
@@ -98,18 +98,6 @@ export function initWeatherBubble() {
       .text(q.text);
   });
 
-  // Highlight near-freezing, high-humidity zone.
-  const freezeX = bubbleXScale(70);
-  const freezeWidth = bubbleXScale(100) - freezeX;
-  const freezeYTop = bubbleYScale(3);
-  const freezeYBottom = bubbleYScale(-5);
-  const freezeHeight = freezeYBottom - freezeYTop;
-  g.append("rect")
-    .attr("class", "freeze-band")
-    .attr("x", freezeX)
-    .attr("y", freezeYTop)
-    .attr("width", freezeWidth)
-    .attr("height", freezeHeight);
 
   bubbleGroup = g.append("g").attr("class", "bubble-group");
 
@@ -134,10 +122,11 @@ export function updateWeatherBubble() {
   const stateCode = (state.selectedState || "").toUpperCase();
   const stateName = stateCode ? getStateNameFromCode(stateCode) : "USA";
 
-  // If state selected, filter data. Else use all data.
-  const baseData = state.selectedState
-    ? state.weatherData.filter((d) => d.state === stateCode)
-    : state.weatherData;
+  const baseData = state.selectedCluster?.points?.length
+    ? state.selectedCluster.points
+    : (state.selectedState
+      ? state.weatherData.filter((d) => d.state === stateCode)
+      : state.weatherData);
 
   const filtered =
     state.weatherFilter === "all"
@@ -232,7 +221,9 @@ export function updateWeatherBubble() {
 
   // Simplified caption logic
   const countStr = formatNumber(baseData.length);
-  const locationStr = state.selectedState ? `${stateCode} – ${stateName}` : "National View";
+  const locationStr = state.selectedCluster?.points?.length
+    ? `Cluster (${formatNumber(baseData.length)} pts) ${state.selectedState ? `– ${stateCode}` : ""}`
+    : (state.selectedState ? `${stateCode} – ${stateName}` : "National View");
 
   d3.select("#bubble-state-caption").text(
     `${locationStr}: ${countStr} accidents${captionFilter}`

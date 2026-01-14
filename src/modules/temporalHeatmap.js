@@ -90,9 +90,11 @@ export function updateTemporalHeatmap() {
 
   // If state selected, filter data. Else use all data.
   // Filter by state
-  let rows = state.selectedState
-    ? state.temporalData.filter((d) => d.state === stateCode)
-    : state.temporalData;
+  let rows = state.selectedCluster?.points?.length
+    ? state.selectedCluster.points
+    : state.selectedState
+      ? state.temporalData.filter((d) => d.state === stateCode)
+      : state.temporalData;
 
   // Filter by weather
   if (state.weatherFilter !== "all" && rows.length > 0) {
@@ -151,7 +153,9 @@ export function updateTemporalHeatmap() {
   // Define scale based on metric
   if (state.currentMetric === "count") {
     const maxVal = d3.max(grid, (d) => d.value) || 1;
-    temporalColorScale = d3.scaleSequential(d3.interpolateBlues).domain([0, maxVal]);
+    const minVal = Math.min(1, maxVal);
+    const warmRamp = (t) => d3.interpolateYlOrRd(0.25 + 0.75 * t);
+    temporalColorScale = d3.scaleSequentialPow(warmRamp).exponent(0.6).domain([minVal, maxVal]).clamp(true);
   } else {
     // Dynamic domain based on actual avgSeverity range
     const sevExtent = d3.extent(grid.filter(d => d.value > 0), (d) => d.value);
@@ -229,7 +233,9 @@ export function updateTemporalHeatmap() {
     isCloud: "Cloudy"
   };
   const weatherStr = state.weatherFilter !== "all" ? ` | Weather: ${wLabels[state.weatherFilter] || state.weatherFilter}` : "";
-  const locationStr = (state.selectedState ? `${stateCode} – ${stateName}` : "National View") + weatherStr;
+  const locationStr = state.selectedCluster?.points?.length
+    ? `Cluster ${state.selectedState ? `(${stateCode} – ${stateName})` : ""}${weatherStr}`
+    : (state.selectedState ? `${stateCode} – ${stateName}` : "National View") + weatherStr;
   d3.select("#temporal-caption").text(locationStr);
 
   if (grid.every((d) => d.value === 0)) {

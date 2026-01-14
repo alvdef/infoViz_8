@@ -5,7 +5,7 @@ from pathlib import Path
 # Paths
 RAW_DATA_PATH = Path("raw_data.csv")
 OUTPUT_PATH = Path("../data.csv")
-SAMPLE_SIZE = 500000
+SAMPLE_SIZE = 800_000
 
 def main():
     if not RAW_DATA_PATH.exists():
@@ -21,6 +21,8 @@ def main():
         "Humidity(%)",
         "Weather_Condition",
         "Start_Time",
+        "Start_Lat",
+        "Start_Lng",
     ]
     
     # Load data
@@ -37,7 +39,10 @@ def main():
     df = df.drop(["Source"], axis=1)
     
     # Drop NAs in critical columns
-    df = df.dropna(subset=['Humidity(%)', "Temperature(F)", "Severity", "Weather_Condition", "Start_Time", "State"])
+    df = df.dropna(subset=[
+        'Humidity(%)', "Temperature(F)", "Severity", "Weather_Condition",
+        "Start_Time", "State", "Start_Lat", "Start_Lng"
+    ])
     
     # Temperature conversion
     df["Temperature(C)"] = (df["Temperature(F)"] - 32) * 5 / 9
@@ -45,6 +50,8 @@ def main():
     # Range filtering
     df = df[(df['Humidity(%)'] >= 0) & (df['Humidity(%)'] <= 100)] 
     df = df[(df["Temperature(C)"] > -35) & (df["Temperature(C)"] < 45)]
+    # Basic coordinate sanity check (continental US-ish bounds)
+    df = df[(df["Start_Lat"].between(18, 72)) & (df["Start_Lng"].between(-180, -50))]
     
     # Weather binary flags (refined based on full condition list)
     print("Creating weather flags...")
@@ -75,7 +82,9 @@ def main():
         'is_Rain', 'is_Snow', 'is_Fog', 'is_Clear', 'is_Cloud', 
         'HighSeverity', 
         'day_of_week', 
-        'hour_of_day'
+        'hour_of_day',
+        'Start_Lat',
+        'Start_Lng'
     ]
     
     df_sample = df[cols_to_export].sample(n=min(SAMPLE_SIZE, len(df)), random_state=42)
