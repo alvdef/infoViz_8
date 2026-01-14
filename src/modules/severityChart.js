@@ -57,7 +57,7 @@ export function initWeatherSeverityChart(onFilterChange) {
 
   severityAxisLabel = g.append("text")
     .attr("class", "weather-severity-axis-label")
-    .attr("text-anchor", "end")
+    .attr("text-anchor", "middle")
     .attr("transform", "rotate(-90)")
     .text("Number of accidents");
 
@@ -330,7 +330,7 @@ function handleSeverityResize() {
   severityXAxisG.attr("transform", `translate(0, ${severityInnerHeight})`);
 
   severityAxisLabel
-    .attr("y", -50)
+    .attr("y", -54)
     .attr("x", -(severityInnerHeight / 2));
 
   severityLegendItems.select("rect").attr("x", severityInnerWidth);

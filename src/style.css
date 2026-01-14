@@ -92,7 +92,7 @@ h1 {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: center;
   flex: 1 1 360px;
   font-size: 14px;
@@ -105,7 +105,7 @@ h1 {
   align-items: center;
   justify-content: center;
   line-height: 1.1;
-  min-width: 80px;
+  min-width: 64px;
 }
 
 .legend-label {
@@ -119,8 +119,9 @@ h1 {
 }
 
 #legend-gradient {
-  flex: 0 1 320px;
-  width: clamp(160px, 40vw, 320px);
+  flex: 1 1 clamp(120px, 22vw, 240px);
+  width: auto;
+  max-width: 240px;
   height: 12px;
   border-radius: 8px;
   border: 1px solid var(--border);
@@ -135,9 +136,13 @@ h1 {
 }
 
 #active-filters {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
   align-items: center;
-  gap: 10px;
+  column-gap: 10px;
+  row-gap: 4px;
+  flex: 1 1 420px;
   padding: 6px 10px;
   border-radius: 8px;
   background: #fff;
@@ -152,13 +157,17 @@ h1 {
 #filter-display {
   color: var(--accent);
   font-weight: 600;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .filter-instruction {
   color: #999;
   font-size: 11px;
-  margin-left: auto;
   font-style: italic;
+  grid-column: 1 / -1;
+  justify-self: end;
+  text-align: right;
 }
 
 .layout-grid {
@@ -380,6 +389,7 @@ footer {
   #legend {
     width: 100%;
     gap: 8px;
+    flex-wrap: wrap;
   }
 
   .controls {
