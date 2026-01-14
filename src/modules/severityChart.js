@@ -8,16 +8,27 @@ import {
   hideTooltip,
   updateTooltipPosition
 } from "../utils.js";
+import { observeResize, getContainerSize } from "./resize.js";
 
 // Stacked bar chart globals
 let severityChartSvg, severityChartGroup, severityEmptyText;
 let severityXScale, severityYScale, severityColorScale;
+let severityChartContainer;
+let severityXAxisG, severityYAxisG, severityAxisLabel;
+let severityLegend, severityLegendItems;
+let severityInnerWidth = 0;
+let severityInnerHeight = 0;
+let severityXAxisRotation = -20;
+let severityXAxisAnchor = "end";
+let severityXAxisDx = "-0.4em";
+let severityXAxisDy = "0.65em";
+let severityYAxisTicks = 6;
+let severityResizeCleanup = null;
 const severitySubgroups = ["Low", "High"];
 const severityColors = ["#fed8b1", "#c2410c"]; // Light/dark orange for consistency
 let severityChartInitialized = false;
 let onFilterChangeCallback = null; // Callback for filter updates
 const severityChartMargin = { top: 40, right: 24, bottom: 60, left: 70 };
-const severityChartSize = { width: 700, height: 280 };
 
 export function initWeatherSeverityChart(onFilterChange) {
   if (onFilterChange) onFilterChangeCallback = onFilterChange;
@@ -25,44 +36,32 @@ export function initWeatherSeverityChart(onFilterChange) {
 
   const container = d3.select("#weather-severity-chart");
   if (container.empty()) return;
+  severityChartContainer = container;
 
-  const width = severityChartSize.width;
-  const height = severityChartSize.height;
-  const innerWidth = width - severityChartMargin.left - severityChartMargin.right;
-  const innerHeight = height - severityChartMargin.top - severityChartMargin.bottom;
-
-  severityChartSvg = container
-    .append("svg")
-    .attr("viewBox", `0 0 ${width} ${height}`)
-    .attr("preserveAspectRatio", "xMidYMid meet");
+  severityChartSvg = container.append("svg");
 
   const g = severityChartSvg
     .append("g")
     .attr("transform", `translate(${severityChartMargin.left},${severityChartMargin.top})`);
   severityChartGroup = g;
 
-  severityXScale = d3.scaleBand().range([0, innerWidth]).padding(0.2);
-  severityYScale = d3.scaleLinear().range([innerHeight, 0]);
+  severityXScale = d3.scaleBand().padding(0.2);
+  severityYScale = d3.scaleLinear();
   severityColorScale = d3
     .scaleOrdinal()
     .domain(severitySubgroups)
     .range(severityColors);
 
-  g.append("g")
-    .attr("class", "severity-x-axis")
-    .attr("transform", `translate(0, ${innerHeight})`);
+  severityXAxisG = g.append("g").attr("class", "severity-x-axis");
+  severityYAxisG = g.append("g").attr("class", "severity-y-axis");
 
-  g.append("g").attr("class", "severity-y-axis");
-
-  g.append("text")
+  severityAxisLabel = g.append("text")
     .attr("class", "weather-severity-axis-label")
     .attr("text-anchor", "end")
     .attr("transform", "rotate(-90)")
-    .attr("y", -50)
-    .attr("x", -(innerHeight / 2))
     .text("Number of accidents");
 
-  const legend = g
+  severityLegend = g
     .append("g")
     .attr("class", "severity-legend")
     .attr("font-family", "sans-serif")
@@ -71,23 +70,21 @@ export function initWeatherSeverityChart(onFilterChange) {
     .attr("text-anchor", "end")
     .attr("transform", "translate(0, -35)");
 
-  const legendItems = legend
+  severityLegendItems = severityLegend
     .selectAll("g")
     .data(severitySubgroups.slice().reverse())
     .enter()
     .append("g")
     .attr("transform", (d, i) => `translate(0, ${i * 18})`);
 
-  legendItems
+  severityLegendItems
     .append("rect")
-    .attr("x", innerWidth)
     .attr("width", 16)
     .attr("height", 16)
     .attr("fill", (d) => severityColorScale(d));
 
-  legendItems
+  severityLegendItems
     .append("text")
-    .attr("x", innerWidth - 4)
     .attr("y", 8)
     .attr("dy", "0.32em")
     .text((d) => d);
@@ -96,14 +93,16 @@ export function initWeatherSeverityChart(onFilterChange) {
     .append("text")
     .attr("class", "weather-severity-empty")
     .attr("text-anchor", "middle")
-    .attr("x", innerWidth / 2)
-    .attr("y", innerHeight / 2)
     .attr("fill", "#6b7280")
     .attr("font-size", 12)
     .style("display", "none")
     .text("No data for this state.");
 
   severityChartInitialized = true;
+  handleSeverityResize();
+
+  if (severityResizeCleanup) severityResizeCleanup();
+  severityResizeCleanup = observeResize(severityChartContainer.node(), handleSeverityResize, { delay: 120 });
 }
 
 export function updateWeatherSeverityChart() {
@@ -191,14 +190,16 @@ export function updateWeatherSeverityChart() {
     .duration(500)
     .call(d3.axisBottom(severityXScale).tickSizeOuter(0))
     .selectAll("text")
-    .attr("transform", "rotate(-20)")
-    .style("text-anchor", "end");
+    .attr("transform", severityXAxisRotation ? `rotate(${severityXAxisRotation})` : null)
+    .style("text-anchor", severityXAxisAnchor)
+    .attr("dx", severityXAxisDx)
+    .attr("dy", severityXAxisDy);
 
   severityChartGroup
     .select(".severity-y-axis")
     .transition()
     .duration(500)
-    .call(d3.axisLeft(severityYScale).ticks(6).tickFormat(formatNumber));
+    .call(d3.axisLeft(severityYScale).ticks(severityYAxisTicks).tickFormat(formatNumber));
 
   const stackedData = d3.stack().keys(severitySubgroups)(top);
 
@@ -312,6 +313,48 @@ function severityMousemove(event) {
 function severityMouseleave(event) {
   hideTooltip();
   d3.select(event.currentTarget).attr("stroke", "none");
+}
+
+function handleSeverityResize() {
+  if (!severityChartContainer) return;
+  const { width, height } = getContainerSize(severityChartContainer.node(), { minW: 320, minH: 240 });
+  severityInnerWidth = Math.max(1, width - severityChartMargin.left - severityChartMargin.right);
+  severityInnerHeight = Math.max(1, height - severityChartMargin.top - severityChartMargin.bottom);
+
+  severityChartSvg.attr("width", width).attr("height", height);
+  severityChartGroup.attr("transform", `translate(${severityChartMargin.left},${severityChartMargin.top})`);
+
+  severityXScale.range([0, severityInnerWidth]);
+  severityYScale.range([severityInnerHeight, 0]);
+
+  severityXAxisG.attr("transform", `translate(0, ${severityInnerHeight})`);
+
+  severityAxisLabel
+    .attr("y", -50)
+    .attr("x", -(severityInnerHeight / 2));
+
+  severityLegendItems.select("rect").attr("x", severityInnerWidth);
+  severityLegendItems.select("text").attr("x", severityInnerWidth - 4);
+
+  severityEmptyText
+    .attr("x", severityInnerWidth / 2)
+    .attr("y", severityInnerHeight / 2);
+
+  if (severityInnerWidth < 460) {
+    severityXAxisRotation = -20;
+    severityXAxisAnchor = "end";
+    severityXAxisDx = "-0.4em";
+    severityXAxisDy = "0.65em";
+  } else {
+    severityXAxisRotation = 0;
+    severityXAxisAnchor = "middle";
+    severityXAxisDx = "0";
+    severityXAxisDy = "0.71em";
+  }
+
+  severityYAxisTicks = severityInnerHeight < 200 ? 4 : 6;
+
+  updateWeatherSeverityChart();
 }
 
 export function updateStateSeveritySummary() {

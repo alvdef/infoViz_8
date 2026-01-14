@@ -7,14 +7,21 @@ import {
   hideTooltip,
   updateTooltipPosition
 } from "../utils.js";
+import { observeResize, getContainerSize } from "./resize.js";
 
 // Temporal heatmap globals
 let temporalSvg, temporalGroup, temporalEmptyText;
 let temporalXScale, temporalYScale, temporalColorScale;
+let temporalContainer;
+let temporalXAxisG, temporalYAxisG, temporalXAxisLabel, temporalYAxisLabel;
+let temporalInnerWidth = 0;
+let temporalInnerHeight = 0;
+let temporalXAxisTicks = [0, 6, 12, 18, 23];
+let temporalYAxisTicks = d3.range(7);
+let temporalResizeCleanup = null;
 let temporalInitialized = false;
 export let temporalMode = "total";
 const temporalMargin = { top: 32, right: 24, bottom: 56, left: 70 };
-const temporalSize = { width: 820, height: 220 };
 const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export function setTemporalMode(mode) {
@@ -25,61 +32,48 @@ export function initTemporalHeatmap() {
   if (temporalInitialized) return;
   const container = d3.select("#temporal-heatmap");
   if (container.empty()) return;
+  temporalContainer = container;
 
-  const width = temporalSize.width;
-  const height = temporalSize.height;
-  const innerWidth = width - temporalMargin.left - temporalMargin.right;
-  const innerHeight = height - temporalMargin.top - temporalMargin.bottom;
-
-  temporalSvg = container
-    .append("svg")
-    .attr("viewBox", `0 0 ${width} ${height}`)
-    .attr("preserveAspectRatio", "xMidYMid meet");
+  temporalSvg = container.append("svg");
 
   temporalGroup = temporalSvg
     .append("g")
     .attr("transform", `translate(${temporalMargin.left},${temporalMargin.top})`);
 
-  temporalXScale = d3.scaleBand().domain(d3.range(24)).range([0, innerWidth]).padding(0.05);
-  temporalYScale = d3.scaleBand().domain(d3.range(7)).range([0, innerHeight]).padding(0.05);
+  temporalXScale = d3.scaleBand().domain(d3.range(24)).padding(0.05);
+  temporalYScale = d3.scaleBand().domain(d3.range(7)).padding(0.05);
   temporalColorScale = d3.scaleSequential(d3.interpolateOrRd).clamp(true);
 
-  temporalGroup
-    .append("g")
-    .attr("class", "temporal-x-axis")
-    .attr("transform", `translate(0, ${innerHeight})`);
+  temporalXAxisG = temporalGroup.append("g").attr("class", "temporal-x-axis");
+  temporalYAxisG = temporalGroup.append("g").attr("class", "temporal-y-axis");
 
-  temporalGroup.append("g").attr("class", "temporal-y-axis");
-
-  temporalGroup
+  temporalXAxisLabel = temporalGroup
     .append("text")
     .attr("class", "weather-severity-axis-label")
-    .attr("x", innerWidth / 2)
-    .attr("y", innerHeight + 44)
     .attr("text-anchor", "middle")
     .text("Hour of day");
 
-  temporalGroup
+  temporalYAxisLabel = temporalGroup
     .append("text")
     .attr("class", "weather-severity-axis-label")
     .attr("text-anchor", "middle")
     .attr("transform", "rotate(-90)")
-    .attr("x", -(innerHeight / 2))
-    .attr("y", -52)
     .text("Day of week");
 
   temporalEmptyText = temporalGroup
     .append("text")
     .attr("class", "weather-severity-empty")
     .attr("text-anchor", "middle")
-    .attr("x", innerWidth / 2)
-    .attr("y", innerHeight / 2)
     .attr("fill", "#6b7280")
     .attr("font-size", 12)
     .style("display", "none")
     .text("No temporal data for this selection.");
 
   temporalInitialized = true;
+  handleTemporalResize();
+
+  if (temporalResizeCleanup) temporalResizeCleanup();
+  temporalResizeCleanup = observeResize(temporalContainer.node(), handleTemporalResize, { delay: 120 });
 }
 
 export function updateTemporalHeatmap() {
@@ -170,7 +164,7 @@ export function updateTemporalHeatmap() {
     .select(".temporal-x-axis")
     .transition()
     .duration(400)
-    .call(d3.axisBottom(temporalXScale).tickValues([0, 6, 12, 18, 23]));
+    .call(d3.axisBottom(temporalXScale).tickValues(temporalXAxisTicks));
 
   temporalGroup
     .select(".temporal-y-axis")
@@ -179,6 +173,7 @@ export function updateTemporalHeatmap() {
     .call(
       d3
         .axisLeft(temporalYScale)
+        .tickValues(temporalYAxisTicks)
         .tickFormat((d) => dayLabels[d] || d)
         .tickSizeOuter(0),
     );
@@ -243,4 +238,43 @@ export function updateTemporalHeatmap() {
   } else {
     temporalEmptyText.style("display", "none");
   }
+}
+
+function handleTemporalResize() {
+  if (!temporalContainer) return;
+  const { width, height } = getContainerSize(temporalContainer.node(), { minW: 320, minH: 220 });
+  temporalInnerWidth = Math.max(1, width - temporalMargin.left - temporalMargin.right);
+  temporalInnerHeight = Math.max(1, height - temporalMargin.top - temporalMargin.bottom);
+
+  temporalSvg.attr("width", width).attr("height", height);
+  temporalGroup.attr("transform", `translate(${temporalMargin.left},${temporalMargin.top})`);
+
+  temporalXScale.range([0, temporalInnerWidth]);
+  temporalYScale.range([0, temporalInnerHeight]);
+
+  if (temporalInnerWidth < 420) {
+    temporalXAxisTicks = [0, 12, 23];
+  } else if (temporalInnerWidth < 620) {
+    temporalXAxisTicks = [0, 6, 12, 18, 23];
+  } else {
+    temporalXAxisTicks = [0, 3, 6, 9, 12, 15, 18, 21, 23];
+  }
+
+  temporalYAxisTicks = temporalInnerHeight < 180 ? [0, 2, 4, 6] : d3.range(7);
+
+  temporalXAxisG.attr("transform", `translate(0, ${temporalInnerHeight})`);
+
+  temporalXAxisLabel
+    .attr("x", temporalInnerWidth / 2)
+    .attr("y", temporalInnerHeight + 44);
+
+  temporalYAxisLabel
+    .attr("x", -(temporalInnerHeight / 2))
+    .attr("y", -52);
+
+  temporalEmptyText
+    .attr("x", temporalInnerWidth / 2)
+    .attr("y", temporalInnerHeight / 2);
+
+  updateTemporalHeatmap();
 }

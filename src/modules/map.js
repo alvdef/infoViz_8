@@ -11,6 +11,7 @@ import {
   formatSeverity,
   formatCount
 } from "../utils.js";
+import { observeResize, getContainerSize } from "./resize.js";
 import { updateWeatherBubble } from "./weatherBubble.js";
 import { updateWeatherSeverityChart, updateStateSeveritySummary } from "./severityChart.js";
 import { updateTemporalHeatmap } from "./temporalHeatmap.js";
@@ -35,8 +36,8 @@ let aggregationLayer;
 // Behaviors + state
 let hexbinGenerator = d3Hexbin();
 let colorScale = d3.scaleSequential(d3.interpolateBlues);
-let resizeTimer = null;
 let onStateSelectCallback = null;
+let mapResizeCleanup = null;
 
 // Data caches
 let basePoints = []; // { id, data, lon, lat, stateCode }
@@ -74,15 +75,21 @@ export function initMap(geojsonOrCallback, data, svg, initialMetric, onStateSele
   reprojectPoints();
   renderStates();
   updateMap();
-  window.addEventListener("resize", handleResize);
+
+  if (mapResizeCleanup) mapResizeCleanup();
+  mapResizeCleanup = observeResize(mapContainer.node(), handleResize, { delay: 120 });
 }
 
 function updateDimensions() {
   const dims = getMapDimensions();
-  width = dims.width;
-  height = dims.height;
-  innerWidth = width - mapMargin.left - mapMargin.right;
-  innerHeight = height - mapMargin.top - mapMargin.bottom;
+  const nextWidth = dims.width;
+  const nextHeight = dims.height;
+  const changed = nextWidth !== width || nextHeight !== height;
+
+  width = nextWidth;
+  height = nextHeight;
+  innerWidth = Math.max(1, width - mapMargin.left - mapMargin.right);
+  innerHeight = Math.max(1, height - mapMargin.top - mapMargin.bottom);
 
   mapSvg.attr("width", width).attr("height", height);
   rootG.attr("transform", `translate(${mapMargin.left},${mapMargin.top})`);
@@ -94,13 +101,24 @@ function updateDimensions() {
   }
   pathGenerator = d3.geoPath().projection(projection);
   hexbinGenerator = d3Hexbin().extent([[0, 0], [innerWidth, innerHeight]]);
+  return changed;
 }
 
 function getMapDimensions() {
-  const node = d3.select("#map").node();
-  const containerWidth = node ? node.getBoundingClientRect().width : 900;
-  const w = Math.max(320, Math.min(containerWidth, 1200));
-  const h = Math.max(320, Math.round(w * 0.55));
+  const node = mapContainer ? mapContainer.node() : d3.select("#map").node();
+  if (!node) return { width: 900, height: 500 };
+
+  const { width: measuredWidth, height: measuredHeight } = getContainerSize(node, {
+    minW: 320,
+    minH: 0
+  });
+
+  const w = measuredWidth || 900;
+  let h = measuredHeight;
+  if (!Number.isFinite(h) || h <= 0) {
+    h = Math.round(w * 0.55);
+  }
+  h = Math.max(220, h);
   return { width: w, height: h };
 }
 
@@ -367,8 +385,11 @@ function renderAggregation(bins) {
 // Dot rendering removed (aggregation only)
 
 function getHexRadius() {
-  const base = 8; // finer clusters
-  return base;
+  return clampValue(innerWidth / 140, 6, 14);
+}
+
+function clampValue(value, min, max) {
+  return Math.max(min, Math.min(value, max));
 }
 
 function updateColorScale(points, bins) {
@@ -444,11 +465,9 @@ function normalizeMetric(metric) {
 }
 
 function handleResize() {
-  clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => {
-    updateDimensions();
-    reprojectPoints();
-    renderStates();
-    updateMap();
-  }, 120);
+  const resized = updateDimensions();
+  if (!resized) return;
+  reprojectPoints();
+  renderStates();
+  updateMap();
 }

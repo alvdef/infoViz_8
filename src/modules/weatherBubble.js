@@ -1,119 +1,99 @@
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 import { state } from "../state.js";
 import { getStateNameFromCode, formatNumber, formatPercent, showTooltip, hideTooltip, updateTooltipPosition } from "../utils.js";
+import { observeResize, getContainerSize } from "./resize.js";
 
 // Bubble chart globals
 let bubbleColorScale;
-let bubbleSvg, bubbleGroup, bubbleEmptyText;
+let bubbleContainer;
+let bubbleSvg, bubbleRoot, bubbleGroup, bubbleEmptyText;
 let bubbleXScale, bubbleYScale, bubbleSizeScale;
+let bubbleXAxisG, bubbleYAxisG, bubbleXAxisLabel, bubbleYAxisLabel;
+let bubbleVerticalGuide, bubbleHorizontalGuide, bubbleQuadrantLabelsG;
+let bubbleInnerWidth = 0;
+let bubbleInnerHeight = 0;
+let bubbleResizeCleanup = null;
 let bubbleInitialized = false;
 const bubbleMargin = { top: 28, right: 28, bottom: 56, left: 64 };
+const humiditySplit = 60;
+const tempSplit = 10;
+const quadrantLabelData = [
+  { key: "cold-dry", text: "Cold & Dry", humidity: 18, temp: tempSplit + 14 },
+  { key: "cold-humid", text: "Cold & Humid", humidity: 90, temp: tempSplit + 14 },
+  { key: "hot-dry", text: "Hot & Dry", humidity: 18, temp: tempSplit - 8 },
+  { key: "hot-humid", text: "Hot & Humid", humidity: 90, temp: tempSplit - 8 },
+];
 
 
 export function initWeatherBubble() {
   const container = d3.select("#scatterplot");
   if (container.empty()) return;
+  bubbleContainer = container;
 
-  const width = 760;
-  const height = 280;
-  const innerWidth = width - bubbleMargin.left - bubbleMargin.right;
-  const innerHeight = height - bubbleMargin.top - bubbleMargin.bottom;
+  bubbleSvg = container.append("svg");
+  bubbleRoot = bubbleSvg.append("g").attr("class", "bubble-root");
 
-  bubbleSvg = container
-    .append("svg")
-    .attr("viewBox", `0 0 ${width} ${height}`)
-    .attr("preserveAspectRatio", "xMidYMid meet");
-
-  const g = bubbleSvg
-    .append("g")
-    .attr("transform", `translate(${bubbleMargin.left},${bubbleMargin.top})`);
-
-  bubbleXScale = d3.scaleLinear().domain([0, 100]).range([0, innerWidth]);
-  bubbleYScale = d3.scaleLinear().domain([-38, 45]).range([innerHeight, 0]);
-  bubbleSizeScale = d3.scaleSqrt().range([2, 20]);
+  bubbleXScale = d3.scaleLinear().domain([0, 100]);
+  bubbleYScale = d3.scaleLinear().domain([-38, 45]);
+  bubbleSizeScale = d3.scaleSqrt();
   // bubbleColorScale will be set dynamically in updateWeatherBubble()
 
-  const xAxis = d3.axisBottom(bubbleXScale).ticks(10).tickFormat((d) => `${d}%`);
-  const yAxis = d3.axisLeft(bubbleYScale).ticks(10).tickFormat((d) => `${d}°C`);
-
-  g.append("g")
-    .attr("class", "x-axis")
-    .attr("transform", `translate(0,${innerHeight})`)
-    .call(xAxis);
-
-  g.append("text")
+  bubbleXAxisG = bubbleRoot.append("g").attr("class", "x-axis");
+  bubbleXAxisLabel = bubbleRoot
+    .append("text")
     .attr("class", "axis-label")
-    .attr("x", innerWidth / 2)
-    .attr("y", innerHeight + 40)
     .attr("text-anchor", "middle")
     .attr("fill", "#4b5563")
     .text("Humidity (%)");
 
-  g.append("g").attr("class", "y-axis").call(yAxis);
-
-  g.append("text")
+  bubbleYAxisG = bubbleRoot.append("g").attr("class", "y-axis");
+  bubbleYAxisLabel = bubbleRoot
+    .append("text")
     .attr("class", "axis-label")
     .attr("transform", "rotate(-90)")
-    .attr("x", -(innerHeight / 2))
-    .attr("y", -46)
     .attr("text-anchor", "middle")
     .attr("fill", "#4b5563")
     .text("Temperature (°C)");
 
-  const humiditySplit = 60;
-  const tempSplit = 10;
-
   // Quadrant guide lines
-  g.append("line")
-    .attr("x1", bubbleXScale(humiditySplit))
-    .attr("x2", bubbleXScale(humiditySplit))
-    .attr("y1", 0)
-    .attr("y2", innerHeight)
+  bubbleVerticalGuide = bubbleRoot
+    .append("line")
     .attr("stroke", "#e5e7eb")
     .attr("stroke-dasharray", "4 4");
 
-  g.append("line")
-    .attr("x1", 0)
-    .attr("x2", innerWidth)
-    .attr("y1", bubbleYScale(tempSplit))
-    .attr("y2", bubbleYScale(tempSplit))
+  bubbleHorizontalGuide = bubbleRoot
+    .append("line")
     .attr("stroke", "#e5e7eb")
     .attr("stroke-dasharray", "4 4");
 
-  const quadrantLabels = [
-    { text: "Cold & Dry", x: bubbleXScale(18), y: bubbleYScale(tempSplit + 14) },
-    { text: "Cold & Humid", x: bubbleXScale(90), y: bubbleYScale(tempSplit + 14) },
-    { text: "Hot & Dry", x: bubbleXScale(18), y: bubbleYScale(tempSplit - 8) },
-    { text: "Hot & Humid", x: bubbleXScale(90), y: bubbleYScale(tempSplit - 8) },
-  ];
+  bubbleQuadrantLabelsG = bubbleRoot.append("g").attr("class", "quadrant-labels");
+  bubbleQuadrantLabelsG
+    .selectAll("text")
+    .data(quadrantLabelData, (d) => d.key)
+    .enter()
+    .append("text")
+    .attr("class", "quadrant-label")
+    .attr("text-anchor", "middle")
+    .attr("fill", "#9ca3af")
+    .attr("font-size", 11)
+    .text((d) => d.text);
 
-  quadrantLabels.forEach((q) => {
-    g.append("text")
-      .attr("class", "quadrant-label")
-      .attr("x", q.x)
-      .attr("y", q.y)
-      .attr("text-anchor", "middle")
-      .attr("fill", "#9ca3af")
-      .attr("font-size", 11)
-      .text(q.text);
-  });
+  bubbleGroup = bubbleRoot.append("g").attr("class", "bubble-group");
 
-
-  bubbleGroup = g.append("g").attr("class", "bubble-group");
-
-  bubbleEmptyText = g
+  bubbleEmptyText = bubbleRoot
     .append("text")
     .attr("id", "bubble-empty")
     .attr("text-anchor", "middle")
-    .attr("x", innerWidth / 2)
-    .attr("y", innerHeight / 2)
     .attr("fill", "#6b7280")
     .attr("font-size", 12)
     .style("display", "none")
     .text("No data for this state and filter.");
 
   bubbleInitialized = true;
-  updateWeatherBubble();
+  handleBubbleResize();
+
+  if (bubbleResizeCleanup) bubbleResizeCleanup();
+  bubbleResizeCleanup = observeResize(bubbleContainer.node(), handleBubbleResize, { delay: 120 });
 }
 
 export function updateWeatherBubble() {
@@ -234,4 +214,63 @@ export function updateWeatherBubble() {
   } else {
     bubbleEmptyText.style("display", "none");
   }
+}
+
+function handleBubbleResize() {
+  if (!bubbleContainer) return;
+  const { width, height } = getContainerSize(bubbleContainer.node(), { minW: 320, minH: 220 });
+  bubbleInnerWidth = Math.max(1, width - bubbleMargin.left - bubbleMargin.right);
+  bubbleInnerHeight = Math.max(1, height - bubbleMargin.top - bubbleMargin.bottom);
+
+  bubbleSvg.attr("width", width).attr("height", height);
+  bubbleRoot.attr("transform", `translate(${bubbleMargin.left},${bubbleMargin.top})`);
+
+  bubbleXScale.range([0, bubbleInnerWidth]);
+  bubbleYScale.range([bubbleInnerHeight, 0]);
+  bubbleSizeScale.range([2, clampValue(bubbleInnerWidth / 35, 10, 24)]);
+
+  const xTicks = bubbleInnerWidth < 480 ? 5 : 10;
+  const yTicks = bubbleInnerHeight < 200 ? 6 : 10;
+
+  bubbleXAxisG
+    .attr("transform", `translate(0,${bubbleInnerHeight})`)
+    .call(d3.axisBottom(bubbleXScale).ticks(xTicks).tickFormat((d) => `${d}%`));
+
+  bubbleYAxisG.call(d3.axisLeft(bubbleYScale).ticks(yTicks).tickFormat((d) => `${d}°C`));
+
+  bubbleXAxisLabel
+    .attr("x", bubbleInnerWidth / 2)
+    .attr("y", bubbleInnerHeight + 40);
+
+  bubbleYAxisLabel
+    .attr("x", -(bubbleInnerHeight / 2))
+    .attr("y", -46);
+
+  bubbleVerticalGuide
+    .attr("x1", bubbleXScale(humiditySplit))
+    .attr("x2", bubbleXScale(humiditySplit))
+    .attr("y1", 0)
+    .attr("y2", bubbleInnerHeight);
+
+  bubbleHorizontalGuide
+    .attr("x1", 0)
+    .attr("x2", bubbleInnerWidth)
+    .attr("y1", bubbleYScale(tempSplit))
+    .attr("y2", bubbleYScale(tempSplit));
+
+  bubbleQuadrantLabelsG
+    .selectAll("text")
+    .data(quadrantLabelData, (d) => d.key)
+    .attr("x", (d) => bubbleXScale(d.humidity))
+    .attr("y", (d) => bubbleYScale(d.temp));
+
+  bubbleEmptyText
+    .attr("x", bubbleInnerWidth / 2)
+    .attr("y", bubbleInnerHeight / 2);
+
+  updateWeatherBubble();
+}
+
+function clampValue(value, min, max) {
+  return Math.max(min, Math.min(value, max));
 }
