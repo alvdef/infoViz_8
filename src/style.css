@@ -312,6 +312,23 @@ svg {
   stroke-width: 2.2px !important;
 }
 
+/* SVG element transitions for smooth filter updates */
+.hex {
+  transition: fill 0.4s ease, fill-opacity 0.3s ease, transform 0.3s ease;
+}
+
+.bubble {
+  transition: fill 0.4s ease, fill-opacity 0.3s ease;
+}
+
+.temporal-cell {
+  transition: fill 0.4s ease, fill-opacity 0.3s ease;
+}
+
+g.severity-layer rect {
+  transition: opacity 0.3s ease, fill 0.3s ease;
+}
+
 /* Old filter btn styles removed, they are no longer needed */
 
 .tooltip {

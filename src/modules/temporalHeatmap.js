@@ -1,5 +1,6 @@
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 import { state } from "../state.js";
+import { WEATHER_LABELS } from "../constants.js";
 import {
   getStateNameFromCode,
   formatNumber,
@@ -82,37 +83,27 @@ export function updateTemporalHeatmap() {
   const stateCode = (state.selectedState || "").toUpperCase();
   const stateName = stateCode ? getStateNameFromCode(stateCode) : "USA";
 
-  // If state selected, filter data. Else use all data.
-  // Filter by state
   let rows = state.selectedCluster?.points?.length
     ? state.selectedCluster.points
     : state.selectedState
       ? state.temporalData.filter((d) => d.state === stateCode)
       : state.temporalData;
 
-  // Filter by weather
   if (state.weatherFilter !== "all" && rows.length > 0) {
     rows = rows.filter(d => d[state.weatherFilter]);
   }
-
-  const hasData = rows.length > 0;
-
-  // Note: Temporal heatmap relies on `temporalData`.
-  // The logic below aggregates whatever is in `rows` into `cellMap`.
 
   const cellMap = new Map();
   rows.forEach((row) => {
     const key = `${row.dayOfWeek}|${row.hourOfDay}`;
     const existing = cellMap.get(key) || { totalAcc: 0, severeAcc: 0, sumSeverity: 0 };
 
-    // Support for both pre-aggregated (row.totalAcc) and individual rows
     const count = row.totalAcc !== undefined ? row.totalAcc : 1;
     const isSevere = row.severeAcc !== undefined ? row.severeAcc : (row.severity >= 3 ? 1 : 0);
-    const sevValue = row.sumSeverity !== undefined ? row.sumSeverity : row.severity; // Severity value to add
+    const sevValue = row.sumSeverity !== undefined ? row.sumSeverity : row.severity;
 
-    // Aggregation logic
     existing.totalAcc += count;
-    existing.sumSeverity += sevValue; // Accumulate severity for average
+    existing.sumSeverity += sevValue;
     existing.severeAcc += isSevere;
     cellMap.set(key, existing);
   });
@@ -121,15 +112,11 @@ export function updateTemporalHeatmap() {
   for (let day = 0; day < 7; day += 1) {
     for (let hour = 0; hour < 24; hour += 1) {
       const key = `${day}|${hour}`;
-      const row = cellMap.get(key) || {
-        totalAcc: 0,
-        severeAcc: 0,
-      };
+      const row = cellMap.get(key) || { totalAcc: 0, severeAcc: 0 };
       let value = 0;
       if (state.currentMetric === "count") {
         value = row.totalAcc;
       } else {
-        // Average severity
         value = row.totalAcc > 0 ? row.sumSeverity / row.totalAcc : 0;
       }
 
@@ -144,18 +131,15 @@ export function updateTemporalHeatmap() {
     }
   }
 
-  // Define scale based on metric
   if (state.currentMetric === "count") {
     const maxVal = d3.max(grid, (d) => d.value) || 1;
     const minVal = Math.min(1, maxVal);
     const warmRamp = (t) => d3.interpolateYlOrRd(0.25 + 0.75 * t);
     temporalColorScale = d3.scaleSequentialPow(warmRamp).exponent(0.6).domain([minVal, maxVal]).clamp(true);
   } else {
-    // Dynamic domain based on actual avgSeverity range
     const sevExtent = d3.extent(grid.filter(d => d.value > 0), (d) => d.value);
     const minSev = sevExtent[0] || 2;
     const maxSev = sevExtent[1] || 3;
-    // Custom interpolator to avoid too-light colors
     const customOranges = (t) => d3.interpolateOranges(0.2 + 0.8 * t);
     temporalColorScale = d3.scaleSequential(customOranges).domain([minSev, maxSev]).clamp(true);
   }
@@ -178,11 +162,13 @@ export function updateTemporalHeatmap() {
         .tickSizeOuter(0),
     );
 
+  // Data binding
   const cells = temporalGroup
     .selectAll("rect.temporal-cell")
     .data(grid, (d) => `${d.day}-${d.hour}`);
 
-  cells
+  // ENTER: New cells fade in
+  const cellsEnter = cells
     .enter()
     .append("rect")
     .attr("class", "temporal-cell")
@@ -193,6 +179,7 @@ export function updateTemporalHeatmap() {
     .attr("rx", 2)
     .attr("ry", 2)
     .style("fill", (d) => (d.value > 0 ? temporalColorScale(d.value) : "#f3f4f6"))
+    .style("fill-opacity", 0)
     .on("mouseover", (event, d) => {
       const dayLabel = dayLabels[d.day] || d.day;
       const metricLabel = state.currentMetric === "count" ? "Total Accidents" : "Avg Severity";
@@ -208,10 +195,18 @@ export function updateTemporalHeatmap() {
     })
     .on("mouseout", hideTooltip);
 
+  // ENTER transition: fade in
+  cellsEnter
+    .transition()
+    .duration(400)
+    .style("fill-opacity", 1);
+
+  // UPDATE: Smooth transition for color changes
   cells
     .transition()
     .duration(400)
     .style("fill", (d) => (d.value > 0 ? temporalColorScale(d.value) : "#f3f4f6"))
+    .style("fill-opacity", 1)
     .attr("x", (d) => temporalXScale(d.hour))
     .attr("y", (d) => temporalYScale(d.day))
     .attr("width", temporalXScale.bandwidth())
@@ -219,15 +214,7 @@ export function updateTemporalHeatmap() {
 
   cells.exit().remove();
 
-  const wLabels = {
-    all: "All",
-    isRain: "Rain",
-    isSnow: "Snow",
-    isFog: "Fog",
-    isClear: "Clear",
-    isCloud: "Cloudy"
-  };
-  const weatherStr = state.weatherFilter !== "all" ? ` | Weather: ${wLabels[state.weatherFilter] || state.weatherFilter}` : "";
+  const weatherStr = state.weatherFilter !== "all" ? ` | Weather: ${WEATHER_LABELS[state.weatherFilter] || state.weatherFilter}` : "";
   const locationStr = state.selectedCluster?.points?.length
     ? `Cluster ${state.selectedState ? `(${stateCode} – ${stateName})` : ""}${weatherStr}`
     : (state.selectedState ? `${stateCode} – ${stateName}` : "National View") + weatherStr;

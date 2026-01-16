@@ -1,5 +1,6 @@
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 import { state } from "../state.js";
+import { WEATHER_CATEGORIES } from "../constants.js";
 import {
   getStateNameFromCode,
   formatNumber,
@@ -25,9 +26,9 @@ let severityXAxisDy = "0.65em";
 let severityYAxisTicks = 6;
 let severityResizeCleanup = null;
 const severitySubgroups = ["Low", "High"];
-const severityColors = ["#fed8b1", "#c2410c"]; // Light/dark orange for consistency
+const severityColors = ["#fed8b1", "#c2410c"];
 let severityChartInitialized = false;
-let onFilterChangeCallback = null; // Callback for filter updates
+let onFilterChangeCallback = null;
 const severityChartMargin = { top: 40, right: 24, bottom: 60, left: 70 };
 
 export function initWeatherSeverityChart(onFilterChange) {
@@ -65,7 +66,6 @@ export function initWeatherSeverityChart(onFilterChange) {
     .append("g")
     .attr("class", "severity-legend")
     .attr("font-family", "sans-serif")
-    .attr("font-size", 11)
     .attr("font-size", 11)
     .attr("text-anchor", "end")
     .attr("transform", "translate(0, -35)");
@@ -118,22 +118,12 @@ export function updateWeatherSeverityChart() {
       ? state.severityWeatherData.filter((d) => d.state === stateCode)
       : state.severityWeatherData;
 
-  // We now group by the 5 main categories derived from global filters.
   if (state.weatherFilter !== "all" && rows.length > 0) {
     rows = rows.filter(d => d[state.weatherFilter]);
   }
-  const hasData = rows.length > 0;
-
-  const categories = [
-    { label: "Rain / Storm", key: "isRain" },
-    { label: "Snow / Ice", key: "isSnow" },
-    { label: "Fog / Mist", key: "isFog" },
-    { label: "Clear sky", key: "isClear" },
-    { label: "Cloudy", key: "isCloud" },
-  ];
 
   const categoryMap = new Map();
-  categories.forEach(cat => {
+  WEATHER_CATEGORIES.forEach(cat => {
     const base = { Weather_Condition: cat.label };
     severitySubgroups.forEach(s => base[s] = 0);
     categoryMap.set(cat.key, base);
@@ -147,18 +137,18 @@ export function updateWeatherSeverityChart() {
 
     if (!group) return;
 
-    categories.forEach(cat => {
+    WEATHER_CATEGORIES.forEach(cat => {
       if (row[cat.key]) {
         categoryMap.get(cat.key)[group] += 1;
       }
     });
   });
 
-  const top = Array.from(categoryMap.values()); // Show all 5 categories
+  const top = Array.from(categoryMap.values());
 
   const label = d3.select("#weather-severity-state-label");
   const weatherText = state.weatherFilter !== "all"
-    ? ` | Filter: ${categories.find(c => c.key === state.weatherFilter)?.label || state.weatherFilter}`
+    ? ` | Filter: ${WEATHER_CATEGORIES.find(c => c.key === state.weatherFilter)?.label || state.weatherFilter}`
     : "";
 
   if (state.selectedCluster?.points?.length) {
@@ -229,30 +219,20 @@ export function updateWeatherSeverityChart() {
     .attr("width", () => severityXScale.bandwidth())
     .attr("y", () => severityYScale(0))
     .attr("height", 0)
+    .attr("opacity", 0)
     .on("mouseover", severityMouseover)
     .on("mousemove", severityMousemove)
     .on("mouseleave", severityMouseleave)
     .on("click", (event, d) => {
-      // d.data is the row object, d.data.Weather_Condition contains the label
-      // We need to map back to the key (e.g. "Rain / Storm" -> "isRain")
-      // BUT current implementation of updateWeatherSeverityChart constructs top array 
-      // where d.data.Weather_Condition is the Label.
-      // We need to lookup the key.
       const label = d.data.Weather_Condition;
-      const categories = [
-        { label: "Rain / Storm", key: "isRain" },
-        { label: "Snow / Ice", key: "isSnow" },
-        { label: "Fog / Mist", key: "isFog" },
-        { label: "Clear sky", key: "isClear" },
-        { label: "Cloudy", key: "isCloud" },
-      ];
-      const match = categories.find(c => c.label === label);
+      const match = WEATHER_CATEGORIES.find(c => c.label === label);
       if (match && onFilterChangeCallback) {
         onFilterChangeCallback(match.key);
       }
     })
     .transition()
     .duration(600)
+    .attr("opacity", 1)
     .attr("y", (d) => severityYScale(d[1]))
     .attr("height", (d) => severityYScale(d[0]) - severityYScale(d[1]));
 
@@ -264,17 +244,9 @@ export function updateWeatherSeverityChart() {
     .attr("y", (d) => severityYScale(d[1]))
     .attr("height", (d) => severityYScale(d[0]) - severityYScale(d[1]))
     .attr("opacity", (d) => {
-      // Visual feedback: dim non-selected bars if a filter is active
       if (state.weatherFilter !== "all") {
         const label = d.data.Weather_Condition;
-        const categories = [
-          { label: "Rain / Storm", key: "isRain" },
-          { label: "Snow / Ice", key: "isSnow" },
-          { label: "Fog / Mist", key: "isFog" },
-          { label: "Clear sky", key: "isClear" },
-          { label: "Cloudy", key: "isCloud" },
-        ];
-        const match = categories.find(c => c.label === label);
+        const match = WEATHER_CATEGORIES.find(c => c.label === label);
         if (match && match.key !== state.weatherFilter) {
           return 0.3;
         }
@@ -286,6 +258,7 @@ export function updateWeatherSeverityChart() {
     .exit()
     .transition()
     .duration(400)
+    .attr("opacity", 0)
     .attr("height", 0)
     .remove();
 }
@@ -305,9 +278,6 @@ function severityMouseover(event, d) {
 
 function severityMousemove(event) {
   updateTooltipPosition(event);
-  // Optional: offset adjustment if needed, but standardizing is safer.
-  // If fine-tuning is needed, we can do it here. 
-  // Let's stick to the standard imported one unless it looks off.
 }
 
 function severityMouseleave(event) {
@@ -372,7 +342,6 @@ export function updateStateSeveritySummary() {
     const stateCode = (state.selectedState || "").toUpperCase();
     counts = state.severityCounts.get(stateCode) || { 1: 0, 2: 0, 3: 0, 4: 0 };
   } else {
-    // Aggregate all
     state.severityCounts.forEach(c => {
       counts[1] += c[1];
       counts[2] += c[2];

@@ -9,7 +9,7 @@ import {
   updateTooltipPosition,
   formatNumber,
   formatSeverity,
-  formatCount
+  clampValue
 } from "../utils.js";
 import { observeResize, getContainerSize } from "./resize.js";
 import { updateWeatherBubble } from "./weatherBubble.js";
@@ -40,14 +40,13 @@ let onStateSelectCallback = null;
 let mapResizeCleanup = null;
 
 // Data caches
-let basePoints = []; // { id, data, lon, lat, stateCode }
-let projectedPoints = []; // { ...base, x, y }
+let basePoints = [];
+let projectedPoints = [];
 let cachedFiltered = [];
 let cachedBins = [];
 const pointStateCache = new WeakMap();
 
 export function initMap(geojsonOrCallback, data, svg, initialMetric, onStateSelect) {
-  // Flexible signature to remain compatible with previous usage.
   if (typeof geojsonOrCallback === "function") {
     onStateSelectCallback = geojsonOrCallback;
   } else if (geojsonOrCallback) {
@@ -222,7 +221,7 @@ function renderStates() {
 
 function handleStateClick(code) {
   if (!code) return;
-  state.selectedCluster = null; // clear cluster when selecting via states
+  state.selectedCluster = null;
   const newState = state.selectedState === code ? null : code;
   if (onStateSelectCallback) {
     onStateSelectCallback(newState);
@@ -263,7 +262,7 @@ export function updateMap() {
   updateMapTitle();
   renderStates();
 
-  aggregationLayer.selectAll("path.hex").remove();
+  // Use proper D3 enter/update/exit pattern instead of destructive remove
   renderAggregation(aggregations);
 }
 
@@ -314,31 +313,42 @@ function renderAggregation(bins) {
   const maxCount = d3.max(bins, (d) => d.count) || 1;
   const radiusBase = getHexRadius();
   const radiusScale = d3.scaleSqrt().domain([0, maxCount]).range([radiusBase * 0.6, radiusBase * 1.8]);
+  const transitionDuration = 400;
 
   const hexes = aggregationLayer
     .selectAll("path.hex")
-    .data(bins, (d) => `${Math.round(d.x)}-${Math.round(d.y)}-${Math.round(radiusBase)}`);
+    .data(bins, (d) => `${Math.round(d.x)}-${Math.round(d.y)}`);
 
-  hexes.enter()
+  // EXIT: Fade out and remove old hexes
+  hexes.exit()
+    .transition()
+    .duration(300)
+    .attr("fill-opacity", 0)
+    .attr("transform", (d) => `translate(${d.x},${d.y}) scale(0.5)`)
+    .remove();
+
+  // ENTER: Create new hexes with fade-in
+  const hexesEnter = hexes.enter()
     .append("path")
     .attr("class", "hex")
     .attr("stroke", "#ffffff")
     .attr("stroke-width", 0.6)
     .attr("vector-effect", "non-scaling-stroke")
+    .attr("transform", (d) => `translate(${d.x},${d.y}) scale(0.3)`)
+    .attr("fill-opacity", 0)
+    .attr("d", (d) => hexbinGenerator.hexagon(radiusScale(d.count)))
+    .attr("fill", (d) => metric === "severity" ? colorScale(d.avgSeverity) : colorScale(d.count))
     .on("click", (event, d) => {
       const clusterId = `${Math.round(d.x)}-${Math.round(d.y)}`;
       const isSameCluster = state.selectedCluster && state.selectedCluster.id === clusterId;
       if (isSameCluster) {
         state.selectedCluster = null;
-        state.selectedState = state.selectedState; // keep current state selection unchanged
       } else {
-        // Store cluster selection and propagate state selection
         state.selectedCluster = {
           id: clusterId,
           points: d.points || [],
           stateCode: d.stateCode || null
         };
-        // Do not override existing state selection when clicking a cluster
       }
       const nextState = state.selectedState;
       if (onStateSelectCallback) {
@@ -356,14 +366,26 @@ function renderAggregation(bins) {
       const locationLabel = Number.isFinite(d.centerLat) && Number.isFinite(d.centerLon)
         ? `Location: ${d.centerLat.toFixed(3)}, ${d.centerLon.toFixed(3)}`
         : "Location: n/a";
-      const html = `<strong>Cluster</strong><br/>Count: ${formatCount(d.count)}${
-        metric === "severity" ? `<br/>Avg severity: ${formatSeverity(d.avgSeverity)}` : ""
-      }<br/>${topStateLabel}<br/>${locationLabel}`;
+      const html = `<strong>Cluster</strong><br/>Count: ${formatNumber(d.count)}${metric === "severity" ? `<br/>Avg severity: ${formatSeverity(d.avgSeverity)}` : ""}<br/>${topStateLabel}<br/>${locationLabel}`;
       showTooltip(html, event);
     })
-    .on("mouseout", hideTooltip)
-    .merge(hexes)
-    .attr("transform", (d) => `translate(${d.x},${d.y})`)
+    .on("mouseout", hideTooltip);
+
+  // ENTER transition: fade in and scale up
+  hexesEnter
+    .transition()
+    .duration(transitionDuration)
+    .attr("transform", (d) => `translate(${d.x},${d.y}) scale(1)`)
+    .attr("fill-opacity", (d) => {
+      const isSelected = state.selectedCluster && state.selectedCluster.id === `${Math.round(d.x)}-${Math.round(d.y)}`;
+      return isSelected ? 1 : (metric === "severity" ? 0.9 : 0.8);
+    });
+
+  // UPDATE: Smooth transition for existing hexes
+  hexes
+    .transition()
+    .duration(transitionDuration)
+    .attr("transform", (d) => `translate(${d.x},${d.y}) scale(1)`)
     .attr("d", (d) => hexbinGenerator.hexagon(radiusScale(d.count)))
     .attr("fill", (d) => metric === "severity" ? colorScale(d.avgSeverity) : colorScale(d.count))
     .attr("fill-opacity", (d) => {
@@ -378,18 +400,10 @@ function renderAggregation(bins) {
       const isSelected = state.selectedCluster && state.selectedCluster.id === `${Math.round(d.x)}-${Math.round(d.y)}`;
       return isSelected ? 1 : 0.6;
     });
-
-  hexes.exit().remove();
 }
-
-// Dot rendering removed (aggregation only)
 
 function getHexRadius() {
   return clampValue(innerWidth / 140, 6, 14);
-}
-
-function clampValue(value, min, max) {
-  return Math.max(min, Math.min(value, max));
 }
 
 function updateColorScale(points, bins) {
@@ -397,7 +411,7 @@ function updateColorScale(points, bins) {
   if (metric === "count") {
     const maxVal = bins && bins.length ? d3.max(bins, (d) => d.count) : points.length || 1;
     const minVal = Math.min(1, maxVal || 1);
-    const warmRamp = (t) => d3.interpolateYlOrRd(0.25 + 0.75 * t); // avoid very light yellows
+    const warmRamp = (t) => d3.interpolateYlOrRd(0.25 + 0.75 * t);
     colorScale = d3.scaleSequentialPow(warmRamp).exponent(0.6).domain([minVal, maxVal || 1]).clamp(true);
     state.legendRange = { min: minVal, max: maxVal || 1 };
   } else {
@@ -425,8 +439,8 @@ export function updateLegend() {
       ? "linear-gradient(90deg, #fdd49e, #f16913, #7f2704)"
       : "linear-gradient(90deg, #fff7ed, #ea580c)"
   );
-  d3.select("#legend-min").text(metric === "count" ? formatCount(minVal) : formatSeverity(minVal));
-  d3.select("#legend-max").text(metric === "count" ? formatCount(maxVal) : formatSeverity(maxVal));
+  d3.select("#legend-min").text(metric === "count" ? formatNumber(minVal) : formatSeverity(minVal));
+  d3.select("#legend-max").text(metric === "count" ? formatNumber(maxVal) : formatSeverity(maxVal));
 }
 
 export function updateMetricDescription(metric) {
