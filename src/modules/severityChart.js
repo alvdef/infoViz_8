@@ -28,6 +28,8 @@ let severityResizeCleanup = null;
 const severitySubgroups = ["Low", "High"];
 const severityColors = ["#fed8b1", "#c2410c"];
 let severityChartInitialized = false;
+let lastAnimationKey = "";
+let animationToken = 0;
 let onFilterChangeCallback = null;
 const severityChartMargin = { top: 40, right: 24, bottom: 60, left: 70 };
 
@@ -122,6 +124,17 @@ export function updateWeatherSeverityChart() {
     rows = rows.filter(d => d[state.weatherFilter]);
   }
 
+  const animationKey = [
+    state.selectedState || "all",
+    state.selectedCluster?.id || "none",
+    state.weatherFilter || "all"
+  ].join("|");
+  const keyChanged = animationKey !== lastAnimationKey;
+  if (keyChanged) {
+    animationToken += 1;
+    lastAnimationKey = animationKey;
+  }
+
   const categoryMap = new Map();
   WEATHER_CATEGORIES.forEach(cat => {
     const base = { Weather_Condition: cat.label };
@@ -177,7 +190,7 @@ export function updateWeatherSeverityChart() {
   severityChartGroup
     .select(".severity-x-axis")
     .transition()
-    .duration(500)
+    .duration(400)
     .call(d3.axisBottom(severityXScale).tickSizeOuter(0))
     .selectAll("text")
     .attr("transform", severityXAxisRotation ? `rotate(${severityXAxisRotation})` : null)
@@ -188,7 +201,7 @@ export function updateWeatherSeverityChart() {
   severityChartGroup
     .select(".severity-y-axis")
     .transition()
-    .duration(500)
+    .duration(400)
     .call(d3.axisLeft(severityYScale).ticks(severityYAxisTicks).tickFormat(formatNumber));
 
   const stackedData = d3.stack().keys(severitySubgroups)(top);
@@ -210,9 +223,28 @@ export function updateWeatherSeverityChart() {
   const rects = severityChartGroup
     .selectAll("g.severity-layer")
     .selectAll("rect")
-    .data((d) => d, (d) => d.data.Weather_Condition);
+    .data(
+      (layer) => layer.map((row) => {
+        const clone = row.slice();
+        clone.data = row.data;
+        clone._anim = animationToken;
+        return clone;
+      }),
+      (d) => `${d.data.Weather_Condition}-${d._anim}`,
+    );
 
-  rects
+  const targetOpacity = (d) => {
+    if (state.weatherFilter !== "all") {
+      const label = d.data.Weather_Condition;
+      const match = WEATHER_CATEGORIES.find(c => c.label === label);
+      if (match && match.key !== state.weatherFilter) {
+        return 0.3;
+      }
+    }
+    return 1;
+  };
+
+  const rectsEnter = rects
     .enter()
     .append("rect")
     .attr("x", (d) => severityXScale(d.data.Weather_Condition))
@@ -229,36 +261,36 @@ export function updateWeatherSeverityChart() {
       if (match && onFilterChangeCallback) {
         onFilterChangeCallback(match.key);
       }
-    })
+    });
+
+  const enterBaseDelay = keyChanged ? 240 : 0;
+  const enterStagger = keyChanged ? 16 : 0;
+
+  rectsEnter
     .transition()
-    .duration(600)
-    .attr("opacity", 1)
+    .duration(keyChanged ? 720 : 500)
+    .delay((d, i) => enterBaseDelay + i * enterStagger)
+    .ease(d3.easeCubicOut)
     .attr("y", (d) => severityYScale(d[1]))
-    .attr("height", (d) => severityYScale(d[0]) - severityYScale(d[1]));
+    .attr("height", (d) => severityYScale(d[0]) - severityYScale(d[1]))
+    .attr("opacity", targetOpacity);
 
   rects
     .transition()
-    .duration(600)
+    .duration(450)
+    .ease(d3.easeCubicOut)
     .attr("x", (d) => severityXScale(d.data.Weather_Condition))
     .attr("width", () => severityXScale.bandwidth())
     .attr("y", (d) => severityYScale(d[1]))
     .attr("height", (d) => severityYScale(d[0]) - severityYScale(d[1]))
-    .attr("opacity", (d) => {
-      if (state.weatherFilter !== "all") {
-        const label = d.data.Weather_Condition;
-        const match = WEATHER_CATEGORIES.find(c => c.label === label);
-        if (match && match.key !== state.weatherFilter) {
-          return 0.3;
-        }
-      }
-      return 1;
-    });
+    .attr("opacity", targetOpacity);
 
   rects
     .exit()
     .transition()
-    .duration(400)
+    .duration(keyChanged ? 260 : 220)
     .attr("opacity", 0)
+    .attr("y", () => severityYScale(0))
     .attr("height", 0)
     .remove();
 }
