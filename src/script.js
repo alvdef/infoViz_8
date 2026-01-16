@@ -7,15 +7,14 @@ AI usage: Portions of this code were drafted with help from a generative AI assi
 
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 import { state } from "./state.js";
+import { WEATHER_LABELS } from "./constants.js";
 import {
   createTooltip,
   buildStateSummaryFromUnified,
   buildSeverityCountMap,
   getStateNameFromCode
 } from "./utils.js";
-import {
-  unifiedParser
-} from "./parsers.js";
+import { unifiedParser } from "./parsers.js";
 import { initMap, updateMetricDescription, updateMapColors } from "./modules/map.js";
 import { initWeatherBubble, updateWeatherBubble } from "./modules/weatherBubble.js";
 import { initWeatherSeverityChart, updateWeatherSeverityChart, updateStateSeveritySummary } from "./modules/severityChart.js";
@@ -23,7 +22,6 @@ import { initTemporalHeatmap, updateTemporalHeatmap, setTemporalMode } from "./m
 
 const statesGeoPath = "data/us_states.geojson";
 const unifiedDataPath = "data.csv";
-
 
 // ---------------------------------------------------------------------------//
 // Data loading
@@ -47,18 +45,12 @@ Promise.all([
 
   updateMetricDescription(state.currentMetric);
   createTooltip();
-  initMap(handleMapStateChange); // Pass callback if needed, or rely on state
+  initMap(handleMapStateChange);
   initWeatherBubble();
   initWeatherSeverityChart(handleWeatherChartFilter);
   initTemporalHeatmap();
   attachControls();
-  updateWeatherBubble();
-  updateWeatherSeverityChart();
-  updateTemporalHeatmap();
-  updateWeatherSeverityChart();
-  updateTemporalHeatmap();
-  updateStateSeveritySummary();
-  updateFilterDisplay();
+  updateAllCharts();
 }).catch((err) => {
   console.error("Error loading unified data. Make sure data.csv exists:", err);
 });
@@ -66,18 +58,12 @@ Promise.all([
 function attachControls() {
   d3.select("#metric-select").on("change", (event) => {
     state.currentMetric = event.target.value;
-    state.selectedCluster = null; // clear cluster selection when metric changes
+    state.selectedCluster = null;
     updateMetricDescription(state.currentMetric);
     updateMapColors();
     updateTemporalHeatmap();
   });
 }
-
-
-
-// Handler for State selection from Map (if map needs to trigger it)
-// Currently Map module likely updates state directly and calls updates.
-// We can centralize if needed, but for now we stick to the plan for Weather.
 
 function handleMapStateChange(newState) {
   state.selectedState = newState;
@@ -85,13 +71,12 @@ function handleMapStateChange(newState) {
 }
 
 function handleWeatherChartFilter(weatherKey) {
-  // If clicking the same filter, toggle it off (reset to all)
   if (state.weatherFilter === weatherKey) {
     state.weatherFilter = "all";
   } else {
     state.weatherFilter = weatherKey;
   }
-  state.selectedCluster = null; // clear cluster selection when filter changes
+  state.selectedCluster = null;
   updateAllCharts();
 }
 
@@ -103,15 +88,6 @@ function updateAllCharts() {
   updateStateSeveritySummary();
   updateFilterDisplay();
 }
-
-const weatherLabels = {
-  "all": "All conditions",
-  "isRain": "Rain / Storm",
-  "isSnow": "Snow / Ice",
-  "isFog": "Fog / Mist",
-  "isClear": "Clear sky",
-  "isCloud": "Cloudy"
-};
 
 function updateFilterDisplay() {
   const filters = [];
@@ -126,7 +102,7 @@ function updateFilterDisplay() {
   }
 
   if (state.weatherFilter && state.weatherFilter !== "all") {
-    const wLabel = weatherLabels[state.weatherFilter] || state.weatherFilter;
+    const wLabel = WEATHER_LABELS[state.weatherFilter] || state.weatherFilter;
     filters.push(`Weather: ${wLabel}`);
   }
 

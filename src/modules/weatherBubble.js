@@ -1,6 +1,15 @@
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 import { state } from "../state.js";
-import { getStateNameFromCode, formatNumber, formatPercent, showTooltip, hideTooltip, updateTooltipPosition } from "../utils.js";
+import { WEATHER_LABELS } from "../constants.js";
+import {
+  getStateNameFromCode,
+  formatNumber,
+  formatPercent,
+  showTooltip,
+  hideTooltip,
+  updateTooltipPosition,
+  clampValue
+} from "../utils.js";
 import { observeResize, getContainerSize } from "./resize.js";
 
 // Bubble chart globals
@@ -24,7 +33,6 @@ const quadrantLabelData = [
   { key: "hot-humid", text: "Hot & Humid", humidity: 90, temp: tempSplit - 8 },
 ];
 
-
 export function initWeatherBubble() {
   const container = d3.select("#scatterplot");
   if (container.empty()) return;
@@ -36,7 +44,6 @@ export function initWeatherBubble() {
   bubbleXScale = d3.scaleLinear().domain([0, 100]);
   bubbleYScale = d3.scaleLinear().domain([-38, 45]);
   bubbleSizeScale = d3.scaleSqrt();
-  // bubbleColorScale will be set dynamically in updateWeatherBubble()
 
   bubbleXAxisG = bubbleRoot.append("g").attr("class", "x-axis");
   bubbleXAxisLabel = bubbleRoot
@@ -55,7 +62,6 @@ export function initWeatherBubble() {
     .attr("fill", "#4b5563")
     .text("Temperature (°C)");
 
-  // Quadrant guide lines
   bubbleVerticalGuide = bubbleRoot
     .append("line")
     .attr("stroke", "#e5e7eb")
@@ -137,12 +143,9 @@ export function updateWeatherBubble() {
 
   bubbleSizeScale.domain([0, maxCount || 1]);
 
-  // Dynamic color scale based on actual riskRatio range in this data subset
   const riskExtent = d3.extent(binnedArray, d => d.riskRatio);
   const minRisk = riskExtent[0] || 0;
   const maxRisk = riskExtent[1] || 0.1;
-  // Use Oranges for consistency with other severity charts
-  // Custom interpolator to avoid too-light colors
   const customOranges = (t) => d3.interpolateOranges(0.2 + 0.8 * t);
   bubbleColorScale = d3.scaleSequential(customOranges).domain([minRisk, maxRisk]).clamp(true);
 
@@ -187,19 +190,9 @@ export function updateWeatherBubble() {
     .attr("r", (d) => bubbleSizeScale(d.count))
     .attr("fill", (d) => bubbleColorScale(d.riskRatio));
 
-  const filterLabels = {
-    all: "All conditions",
-    isRain: "Rain / Storm",
-    isSnow: "Snow / Ice",
-    isFog: "Fog / Mist",
-    isClear: "Clear sky",
-    isCloud: "Cloudy",
-  };
-
   const captionFilter =
-    state.weatherFilter === "all" ? "" : ` | Filter: ${filterLabels[state.weatherFilter] || state.weatherFilter}`;
+    state.weatherFilter === "all" ? "" : ` | Filter: ${WEATHER_LABELS[state.weatherFilter] || state.weatherFilter}`;
 
-  // Simplified caption logic
   const countStr = formatNumber(baseData.length);
   const locationStr = state.selectedCluster?.points?.length
     ? `Cluster (${formatNumber(baseData.length)} pts) ${state.selectedState ? `– ${stateCode}` : ""}`
@@ -269,8 +262,4 @@ function handleBubbleResize() {
     .attr("y", bubbleInnerHeight / 2);
 
   updateWeatherBubble();
-}
-
-function clampValue(value, min, max) {
-  return Math.max(min, Math.min(value, max));
 }
