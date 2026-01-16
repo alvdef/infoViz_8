@@ -5,7 +5,7 @@ from pathlib import Path
 # Paths
 RAW_DATA_PATH = Path("raw_data.csv")
 OUTPUT_PATH = Path("../data.csv")
-SAMPLE_SIZE = 1_000
+SAMPLE_SIZE = 800_000
 
 def main():
     if not RAW_DATA_PATH.exists():
