@@ -262,7 +262,7 @@ export function updateMap() {
   updateMapTitle();
   renderStates();
 
-  aggregationLayer.selectAll("path.hex").remove();
+  // Use proper D3 enter/update/exit pattern instead of destructive remove
   renderAggregation(aggregations);
 }
 
@@ -313,17 +313,31 @@ function renderAggregation(bins) {
   const maxCount = d3.max(bins, (d) => d.count) || 1;
   const radiusBase = getHexRadius();
   const radiusScale = d3.scaleSqrt().domain([0, maxCount]).range([radiusBase * 0.6, radiusBase * 1.8]);
+  const transitionDuration = 400;
 
   const hexes = aggregationLayer
     .selectAll("path.hex")
-    .data(bins, (d) => `${Math.round(d.x)}-${Math.round(d.y)}-${Math.round(radiusBase)}`);
+    .data(bins, (d) => `${Math.round(d.x)}-${Math.round(d.y)}`);
 
-  hexes.enter()
+  // EXIT: Fade out and remove old hexes
+  hexes.exit()
+    .transition()
+    .duration(300)
+    .attr("fill-opacity", 0)
+    .attr("transform", (d) => `translate(${d.x},${d.y}) scale(0.5)`)
+    .remove();
+
+  // ENTER: Create new hexes with fade-in
+  const hexesEnter = hexes.enter()
     .append("path")
     .attr("class", "hex")
     .attr("stroke", "#ffffff")
     .attr("stroke-width", 0.6)
     .attr("vector-effect", "non-scaling-stroke")
+    .attr("transform", (d) => `translate(${d.x},${d.y}) scale(0.3)`)
+    .attr("fill-opacity", 0)
+    .attr("d", (d) => hexbinGenerator.hexagon(radiusScale(d.count)))
+    .attr("fill", (d) => metric === "severity" ? colorScale(d.avgSeverity) : colorScale(d.count))
     .on("click", (event, d) => {
       const clusterId = `${Math.round(d.x)}-${Math.round(d.y)}`;
       const isSameCluster = state.selectedCluster && state.selectedCluster.id === clusterId;
@@ -352,13 +366,26 @@ function renderAggregation(bins) {
       const locationLabel = Number.isFinite(d.centerLat) && Number.isFinite(d.centerLon)
         ? `Location: ${d.centerLat.toFixed(3)}, ${d.centerLon.toFixed(3)}`
         : "Location: n/a";
-      const html = `<strong>Cluster</strong><br/>Count: ${formatNumber(d.count)}${metric === "severity" ? `<br/>Avg severity: ${formatSeverity(d.avgSeverity)}` : ""
-        }<br/>${topStateLabel}<br/>${locationLabel}`;
+      const html = `<strong>Cluster</strong><br/>Count: ${formatNumber(d.count)}${metric === "severity" ? `<br/>Avg severity: ${formatSeverity(d.avgSeverity)}` : ""}<br/>${topStateLabel}<br/>${locationLabel}`;
       showTooltip(html, event);
     })
-    .on("mouseout", hideTooltip)
-    .merge(hexes)
-    .attr("transform", (d) => `translate(${d.x},${d.y})`)
+    .on("mouseout", hideTooltip);
+
+  // ENTER transition: fade in and scale up
+  hexesEnter
+    .transition()
+    .duration(transitionDuration)
+    .attr("transform", (d) => `translate(${d.x},${d.y}) scale(1)`)
+    .attr("fill-opacity", (d) => {
+      const isSelected = state.selectedCluster && state.selectedCluster.id === `${Math.round(d.x)}-${Math.round(d.y)}`;
+      return isSelected ? 1 : (metric === "severity" ? 0.9 : 0.8);
+    });
+
+  // UPDATE: Smooth transition for existing hexes
+  hexes
+    .transition()
+    .duration(transitionDuration)
+    .attr("transform", (d) => `translate(${d.x},${d.y}) scale(1)`)
     .attr("d", (d) => hexbinGenerator.hexagon(radiusScale(d.count)))
     .attr("fill", (d) => metric === "severity" ? colorScale(d.avgSeverity) : colorScale(d.count))
     .attr("fill-opacity", (d) => {
@@ -373,8 +400,6 @@ function renderAggregation(bins) {
       const isSelected = state.selectedCluster && state.selectedCluster.id === `${Math.round(d.x)}-${Math.round(d.y)}`;
       return isSelected ? 1 : 0.6;
     });
-
-  hexes.exit().remove();
 }
 
 function getHexRadius() {

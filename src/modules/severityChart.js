@@ -219,6 +219,7 @@ export function updateWeatherSeverityChart() {
     .attr("width", () => severityXScale.bandwidth())
     .attr("y", () => severityYScale(0))
     .attr("height", 0)
+    .attr("opacity", 0)
     .on("mouseover", severityMouseover)
     .on("mousemove", severityMousemove)
     .on("mouseleave", severityMouseleave)
@@ -231,6 +232,7 @@ export function updateWeatherSeverityChart() {
     })
     .transition()
     .duration(600)
+    .attr("opacity", 1)
     .attr("y", (d) => severityYScale(d[1]))
     .attr("height", (d) => severityYScale(d[0]) - severityYScale(d[1]));
 
@@ -256,6 +258,7 @@ export function updateWeatherSeverityChart() {
     .exit()
     .transition()
     .duration(400)
+    .attr("opacity", 0)
     .attr("height", 0)
     .remove();
 }

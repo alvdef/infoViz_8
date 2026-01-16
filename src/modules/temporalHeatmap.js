@@ -162,11 +162,13 @@ export function updateTemporalHeatmap() {
         .tickSizeOuter(0),
     );
 
+  // Data binding
   const cells = temporalGroup
     .selectAll("rect.temporal-cell")
     .data(grid, (d) => `${d.day}-${d.hour}`);
 
-  cells
+  // ENTER: New cells fade in
+  const cellsEnter = cells
     .enter()
     .append("rect")
     .attr("class", "temporal-cell")
@@ -177,6 +179,7 @@ export function updateTemporalHeatmap() {
     .attr("rx", 2)
     .attr("ry", 2)
     .style("fill", (d) => (d.value > 0 ? temporalColorScale(d.value) : "#f3f4f6"))
+    .style("fill-opacity", 0)
     .on("mouseover", (event, d) => {
       const dayLabel = dayLabels[d.day] || d.day;
       const metricLabel = state.currentMetric === "count" ? "Total Accidents" : "Avg Severity";
@@ -192,10 +195,18 @@ export function updateTemporalHeatmap() {
     })
     .on("mouseout", hideTooltip);
 
+  // ENTER transition: fade in
+  cellsEnter
+    .transition()
+    .duration(400)
+    .style("fill-opacity", 1);
+
+  // UPDATE: Smooth transition for color changes
   cells
     .transition()
     .duration(400)
     .style("fill", (d) => (d.value > 0 ? temporalColorScale(d.value) : "#f3f4f6"))
+    .style("fill-opacity", 1)
     .attr("x", (d) => temporalXScale(d.hour))
     .attr("y", (d) => temporalYScale(d.day))
     .attr("width", temporalXScale.bandwidth())

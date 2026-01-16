@@ -167,7 +167,7 @@ export function updateWeatherBubble() {
     .attr("cx", (d) => bubbleXScale(d.humidity))
     .attr("cy", (d) => bubbleYScale(d.temp))
     .attr("r", 0)
-    .attr("fill-opacity", 0.9)
+    .attr("fill-opacity", 0)
     .attr("stroke", "rgba(0,0,0,0.25)")
     .attr("stroke-width", 0.6)
     .on("mouseover", (event, d) => {
@@ -188,7 +188,8 @@ export function updateWeatherBubble() {
     .attr("cx", (d) => bubbleXScale(d.humidity))
     .attr("cy", (d) => bubbleYScale(d.temp))
     .attr("r", (d) => bubbleSizeScale(d.count))
-    .attr("fill", (d) => bubbleColorScale(d.riskRatio));
+    .attr("fill", (d) => bubbleColorScale(d.riskRatio))
+    .attr("fill-opacity", 0.9);
 
   const captionFilter =
     state.weatherFilter === "all" ? "" : ` | Filter: ${WEATHER_LABELS[state.weatherFilter] || state.weatherFilter}`;
